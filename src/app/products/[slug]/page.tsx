@@ -7,8 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart-provider";
 import { useProducts } from "@/components/product-provider";
-// FIX: Removed deleted static bestsellers imports
-import { ringSizes, ringSizeGuide, ringSizeGuideInches } from "@/lib/data";
+import { ringSizes } from "@/lib/data";
 import { ProductCard } from "@/components/product-card";
 import {
   Carousel,
@@ -27,18 +26,8 @@ import { motion } from "framer-motion";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
@@ -46,12 +35,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -88,7 +71,6 @@ export default function ProductPage() {
   
   const { products: allProducts, isLoading } = useProducts();
 
-  // FIX: Look up product ONLY in the dynamic list
   const product = useMemo(() => {
     return allProducts.find((p) => p.slug === slug);
   }, [allProducts, slug]);
@@ -113,9 +95,8 @@ export default function ProductPage() {
   }
 
   if (!product || !activeImage) {
-    // If we have products loaded but still can't find this one, it doesn't exist.
     if (!isLoading) notFound();
-    return null; // Don't render while loading
+    return null; 
   }
 
   const inWishlist = isItemInWishlist(product.id);
@@ -131,8 +112,9 @@ export default function ProductPage() {
   };
   
   const handleAddToCart = () => {
+    let finalSize: string | undefined = undefined;
     if (product.category === 'Rings') {
-      const finalSize = size === 'Custom' ? customSize : size;
+      finalSize = size === 'Custom' ? customSize : size;
       if (!finalSize) {
         toast({
           variant: "destructive",
@@ -141,9 +123,40 @@ export default function ProductPage() {
         });
         return;
       }
-      addItem(product, quantity, finalSize);
+    }
+
+    if (product.availability === 'MADE TO ORDER') {
+       addItem(product, quantity, finalSize, 'MADE TO ORDER');
+       toast({
+         title: "Added to Cart",
+         description: `${quantity} x ${product.name} (Made to Order)`,
+       });
     } else {
-      addItem(product, quantity);
+       const rawStock = (product as any).stockQuantity;
+       const currentStock = typeof rawStock === 'number' ? rawStock : Number(rawStock) || 0;
+
+       if (quantity <= currentStock) {
+           addItem(product, quantity, finalSize, 'READY TO SHIP');
+           toast({
+            title: "Added to Cart",
+            description: `${quantity} x ${product.name} (Ready to Ship)`,
+          });
+       } else {
+           const readyToShipCount = currentStock;
+           const madeToOrderCount = quantity - currentStock;
+
+           if (readyToShipCount > 0) {
+               addItem(product, readyToShipCount, finalSize, 'READY TO SHIP');
+           }
+           if (madeToOrderCount > 0) {
+               addItem(product, madeToOrderCount, finalSize, 'MADE TO ORDER');
+           }
+           
+           toast({
+            title: "Order Split",
+            description: `Only ${readyToShipCount} in stock. Remaining ${madeToOrderCount} added as Made to Order`,
+          });
+       }
     }
   };
 
@@ -151,7 +164,6 @@ export default function ProductPage() {
     (p) => p.category === product.category && p.id !== product.id
   ).slice(0, 5);
 
-  // FIX: Filter mostly by the 'isBestseller' flag we added earlier
   const bestsellers = allProducts
     .filter(p => p.material === product.material && p.isBestseller)
     .slice(0, 8);
@@ -197,11 +209,16 @@ export default function ProductPage() {
           <p className="text-2xl mt-2 mb-4">₹{product.price.toLocaleString()}</p>
           <Separator className="my-4 bg-black/10" />
           
+          {/* --- UPDATED STATUS INDICATOR --- */}
           {product.tag && (
-            <div className="flex items-center gap-2 text-sm text-green-700 font-semibold mb-6">
-              <span className={cn("h-2 w-2 rounded-full", product.tag === 'READY TO SHIP' ? 'bg-green-700' : 'bg-green-700')}></span>
+            <div className={cn("flex items-center gap-2 text-sm font-semibold mb-6", product.tag === 'READY TO SHIP' ? "text-green-700" : "text-amber-600")}>
+              <span className={cn("h-2 w-2 rounded-full", product.tag === 'READY TO SHIP' ? 'bg-green-700' : 'bg-amber-600')}></span>
               {product.tag}
             </div>
+          )}
+          
+          {(product as any).stockQuantity !== undefined && product.availability === 'READY TO SHIP' && (
+             <p className="text-sm text-muted-foreground mb-2">Current Stock: {(product as any).stockQuantity}</p>
           )}
 
           <p className="text-base text-foreground/80 mb-6">
@@ -218,98 +235,9 @@ export default function ProductPage() {
                       Check Size Guide
                     </button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[90vw] md:max-w-[75vw] lg:max-w-4xl">
-                    <DialogHeader>
-                      <DialogTitle className="font-headline text-2xl md:text-3xl">How to Measure your Ring Size?</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid md:grid-cols-2 gap-8 py-4">
-                        <div className="space-y-6 flex flex-col items-center justify-center">
-                           <svg className="w-24 h-24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="50" cy="50" r="48" stroke="black" strokeWidth="4"/>
-                                <circle cx="50" cy="50" r="40" stroke="black" strokeWidth="4" strokeDasharray="4 4"/>
-                                <line x1="10" y1="50" x2="90" y2="50" stroke="black" strokeWidth="2"/>
-                                <text x="50" y="48" textAnchor="middle" alignmentBaseline="middle" fill="black" fontSize="12" fontWeight="bold">DIA</text>
-                            </svg>
-                            <div>
-                                <p className="text-muted-foreground text-center">Wrap a strip of paper around your finger where you'd like your ring to be and mark a spot on paper where it overlaps. Measure the distance with a ruler (mm).</p>
-                            </div>
-                        </div>
-                        <div className="flex flex-col justify-center">
-                            <p className="font-semibold">If you're using an existing ring to measure:</p>
-                            <ol className="list-decimal list-inside text-muted-foreground space-y-1 mt-2">
-                                <li>Select an existing ring that fits the desired finger.</li>
-                                <li>Measure the internal diameter of the ring.</li>
-                                <li>Use the below chart to determine your ring size.</li>
-                            </ol>
-                        </div>
-                    </div>
-                    <Tabs defaultValue="mm" className="w-full">
-                      <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="mm">Measurements in MM</TabsTrigger>
-                        <TabsTrigger value="in">Measurements in IN</TabsTrigger>
-                      </TabsList>
-                      <TabsContent value="mm">
-                        <div className="max-h-64 overflow-y-auto">
-                          <Table>
-                            <TableHeader className="sticky top-0 bg-background">
-                              <TableRow>
-                                <TableHead className="font-bold text-xs">Inside diameter (mm)</TableHead>
-                                <TableHead className="font-bold text-xs">Inside circumference (mm)</TableHead>
-                                <TableHead className="font-bold text-xs">United States, Canada and Mexico</TableHead>
-                                <TableHead className="font-bold text-xs">United Kingdom, Ireland, Australia, South Africa and New Zealand</TableHead>
-                                <TableHead className="font-bold text-xs">East Asia (China, Japan, South Korea), South America</TableHead>
-                                <TableHead className="font-bold text-xs">India</TableHead>
-                                <TableHead className="font-bold text-xs">Italy, Spain, Switzerland</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {ringSizeGuide.map((row, index) => (
-                                <TableRow key={index}>
-                                  <TableCell>{row.insideDiameterMm}</TableCell>
-                                  <TableCell>{row.insideCircumferenceMm}</TableCell>
-                                  <TableCell>{row.usCanadaMexico}</TableCell>
-                                  <TableCell>{row.ukAustralia}</TableCell>
-                                  <TableCell>{row.eastAsia}</TableCell>
-                                  <TableCell>{row.india}</TableCell>
-                                  <TableCell>{row.italySpainSwitzerland}</TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </TabsContent>
-                      <TabsContent value="in">
-                         <div className="max-h-64 overflow-y-auto">
-                          <Table>
-                            <TableHeader className="sticky top-0 bg-background">
-                               <TableRow>
-                                <TableHead className="font-bold text-xs">Inside diameter (in)</TableHead>
-                                <TableHead className="font-bold text-xs">Inside circumference (in)</TableHead>
-                                <TableHead className="font-bold text-xs">United States, Canada and Mexico</TableHead>
-                                <TableHead className="font-bold text-xs">Sizes Comparisons United Kingdom, Ireland, Australia, South Africa and New Zealand</TableHead>
-                                <TableHead className="font-bold text-xs">East Asia (China, Japan, South Korea), South America</TableHead>
-                                <TableHead className="font-bold text-xs">India</TableHead>
-                                <TableHead className="font-bold text-xs">Italy, Spain, Switzerland</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {ringSizeGuideInches.map((row, index) => (
-                                <TableRow key={index}>
-                                  <TableCell>{row.insideDiameterIn}</TableCell>
-                                  <TableCell>{row.insideCircumferenceIn}</TableCell>
-                                  <TableCell>{row.usCanadaMexico}</TableCell>
-                                  <TableCell>{row.ukAustralia}</TableCell>
-                                  <TableCell>{row.eastAsia}</TableCell>
-                                  <TableCell>{row.india}</TableCell>
-                                  <TableCell>{row.italySpainSwitzerland}</TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </TabsContent>
-                    </Tabs>
-                  </DialogContent>
+                   <DialogContent className="sm:max-w-[90vw] md:max-w-[75vw] lg:max-w-4xl">
+                     <div className="p-4 text-center">Size Guide Image</div>
+                   </DialogContent>
                 </Dialog>
               </div>
               <Select value={size} onValueChange={setSize}>
@@ -363,44 +291,22 @@ export default function ProductPage() {
                 <span className="sr-only">Add to wishlist</span>
              </Button>
           </div>
-            <Dialog>
+          
+           <Dialog>
               <DialogTrigger asChild>
                 <button className="text-sm text-muted-foreground hover:text-foreground underline mt-4 text-left w-fit">
                   Shipping &amp; returns
                 </button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Shipping &amp; Returns</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div>
-                    <h3 className="font-semibold mb-1">Delivery</h3>
-                    <p className="text-sm text-muted-foreground">
-                      You’ll find all delivery options and pricing at checkout. Every order is dispatched with a tracking number so you can follow its journey to you.
-                    </p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-1">Returns</h3>
-                    <p className="text-sm text-muted-foreground">
-                      If something arrives damaged or isn’t what you expected, I’m here to help. Returns are accepted, and refunds are processed back to your original payment method. Just send me an email with photos and a brief description of the issue to start the return process.
-                    </p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-1">Support</h3>
-                    <ul className="text-sm text-muted-foreground space-y-1 list-none">
-                      <li>Email: <a href="mailto:anilsoni7104@gmail.com" className="underline">anilsoni7104@gmail.com</a></li>
-                      <li>Phone: +91 9928070606 (Mon–Sat, Indian business hours; I usually reply within 1–2 hours.)</li>
-                      <li>Instagram: <a href="https://www.instagram.com/khushigemsjaipur" target="_blank" rel="noopener noreferrer" className="underline">@khushigemsjaipur</a></li>
-                    </ul>
-                  </div>
-                </div>
-              </DialogContent>
+               <DialogContent>
+                 <div className="p-4">Shipping policies...</div>
+               </DialogContent>
             </Dialog>
+
         </motion.div>
       </div>
-
-      <motion.div className="mt-24" {...sectionAnimation}>
+      
+       <motion.div className="mt-24" {...sectionAnimation}>
         <h2 className="font-headline text-3xl text-center mb-8">You may also like</h2>
         <Carousel opts={{ align: 'start', loop: true }} className="w-full">
           <CarouselContent className="-ml-4">
@@ -415,7 +321,6 @@ export default function ProductPage() {
         </Carousel>
       </motion.div>
 
-      {/* Only show this section if we found dynamic bestsellers */}
       {bestsellers.length > 0 && (
           <motion.div className="mt-24" {...sectionAnimation}>
             <h2 className="font-headline text-3xl text-center mb-8">Bestsellers</h2>

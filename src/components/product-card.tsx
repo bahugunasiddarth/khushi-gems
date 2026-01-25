@@ -21,7 +21,7 @@ export function ProductCard({ product }: ProductCardProps) {
   // SAFETY: Ensure we have an ID to check the wishlist
   const inWishlist = product.id ? isItemInWishlist(product.id) : false;
 
-  // SAFETY: Generate a slug if it's missing (e.g. from raw bestseller data)
+  // SAFETY: Generate a slug if it's missing
   const productSlug = product.slug 
     ? product.slug 
     : product.name 
@@ -33,7 +33,7 @@ export function ProductCard({ product }: ProductCardProps) {
     ? product.price.toLocaleString() 
     : parseFloat(String(product.price || 0)).toLocaleString();
 
-  // LOGIC: Use the first image from the array, or fallback to the legacy imageUrl, or a placeholder
+  // LOGIC: Use the first image from the array, or fallback
   const mainImage = (product.imageUrls && product.imageUrls.length > 0) 
     ? product.imageUrls[0] 
     : product.imageUrl || '/placeholder-image.jpg';
@@ -52,7 +52,6 @@ export function ProductCard({ product }: ProductCardProps) {
     <Card className="group w-full overflow-hidden border-none shadow-none bg-transparent">
       <CardContent className="p-0">
         <div className="relative">
-          {/* UPDATED LINK: Uses the safe 'productSlug' calculated above */}
           <Link href={`/products/${productSlug}`}>
             <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg">
               {mainImage && (
@@ -66,6 +65,7 @@ export function ProductCard({ product }: ProductCardProps) {
               )}
             </div>
           </Link>
+          
           <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
              <Button 
               size="icon" 
@@ -85,16 +85,23 @@ export function ProductCard({ product }: ProductCardProps) {
               <Plus className="h-4 w-4"/>
             </Button>
           </div>
-           <div className="absolute top-2 right-2">
+
+           {/* --- REVERTED UI STYLE, KEPT LOGIC --- */}
+           <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
             {product.availability === 'READY TO SHIP' && (
               <div className="rounded-full bg-background/80 px-2 py-0.5 text-xs font-semibold backdrop-blur-sm">
                 Ready to Ship
               </div>
             )}
+            {product.availability === 'MADE TO ORDER' && (
+              <div className="rounded-full bg-background/80 px-2 py-0.5 text-xs font-semibold backdrop-blur-sm">
+                Made to Order
+              </div>
+            )}
           </div>
+
         </div>
         <div className="mt-3 text-left">
-           {/* UPDATED LINK: Uses the safe 'productSlug' calculated above */}
           <Link href={`/products/${productSlug}`}>
             <h3 className="font-semibold text-base truncate">{product.name}</h3>
           </Link>

@@ -114,7 +114,7 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
   
   const form = useForm<CheckoutFormValues>({
     resolver: zodResolver(formSchema.refine(data => {
-        if (createAccount && !user) { // Only require password if creating an account and not logged in
+        if (createAccount && !user) { 
             return data.createAccountPassword && data.createAccountPassword.length >= 8;
         }
         return true;
@@ -153,7 +153,6 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
   
   const savedValuesRef = useRef<CheckoutFormValues | null>(null);
 
-  // Load from localStorage on mount
   useEffect(() => {
     const savedData = localStorage.getItem("checkoutForm");
     if (savedData) {
@@ -162,21 +161,18 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
         form.reset(parsedData);
         savedValuesRef.current = parsedData;
       } catch (e) {
-        console.error("Failed to parse checkout form data from localStorage", e);
         localStorage.removeItem("checkoutForm");
       }
     }
   }, [form]);
 
-  // Debounced save to localStorage to improve performance
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const subscription = form.watch((value) => {
-        // Prevent re-renders from triggering saves unnecessarily
         if (JSON.stringify(value) === JSON.stringify(savedValuesRef.current)) {
             return;
         }
-        savedValuesRef.current = value;
+        savedValuesRef.current = value as CheckoutFormValues;
 
         if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
@@ -194,7 +190,6 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
     };
   }, [form, form.watch]);
 
-
    useEffect(() => {
     if (userProfile) {
         const { billingAddress } = userProfile;
@@ -211,9 +206,21 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
             country: billingAddress?.country || 'India',
             phone: billingAddress?.phone || '',
         });
+    } else if (user) {
+        const nameParts = user.displayName ? user.displayName.split(' ') : [];
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+        
+        const currentValues = form.getValues();
+        const resetValues: CheckoutFormValues = {
+             ...currentValues,
+             email: user.email || '',
+             firstName: firstName,
+             lastName: lastName,
+        };
+        form.reset(resetValues);
     }
-  }, [userProfile, form]);
-
+  }, [userProfile, user, form]);
 
   async function onSubmit(values: CheckoutFormValues) {
     onPlaceOrder();
@@ -232,9 +239,7 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.createAccountPassword);
             effectiveUser = userCredential.user;
-            
-            await effectiveUser.getIdToken(true); // Force token refresh
-
+            await effectiveUser.getIdToken(true); 
             const userDocRef = doc(firestore, 'users', effectiveUser.uid);
             await setDoc(userDocRef, {
                 id: effectiveUser.uid,
@@ -242,24 +247,12 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
                 firstName: values.firstName,
                 lastName: values.lastName,
             }, { merge: true });
-
             toast({ title: "Account created successfully!" });
         } catch (error: any) {
-            console.error("Error creating account during checkout: ", error);
-            let title = "Account Creation Failed";
-            let description = error.message || "Please check your email and password.";
-
-            if (error.code === 'auth/network-request-failed') {
-                title = "Verification Failed";
-                description = "Could not verify your request. Please refresh the page and try again. This may be due to a network issue or an ad-blocker.";
-            } else if (error.code === 'auth/email-already-in-use') {
-                description = "This email address is already in use. Please log in instead of creating a new account.";
-            }
-
-            toast({
+             toast({
                 variant: "destructive",
-                title: title,
-                description: description,
+                title: "Account Creation Failed",
+                description: error.message,
             });
             return;
         }
@@ -268,8 +261,8 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
     if (!effectiveUser) {
         toast({
             variant: "destructive",
-            title: "Please log in or create an account",
-            description: "You need to be logged in to place an order. Please check the 'Create an account?' box and set a password.",
+            title: "Please log in",
+            description: "You need to be logged in to place an order.",
         });
         return;
     }
@@ -290,26 +283,25 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
         billingAddress: billingAddressString,
         paymentMethod: values.paymentMethod,
         status: "Processing",
+        customer: {
+            name: `${values.firstName} ${values.lastName}`,
+            email: values.email,
+        }
     };
 
     try {
-      // Initialize Batch
       const batch = writeBatch(firestore);
-
-      // 1. Create Order Reference
       const ordersCollectionRef = collection(firestore, 'users', effectiveUser.uid, 'orders');
-      const newOrderRef = doc(ordersCollectionRef); // Create ID client-side
+      const newOrderRef = doc(ordersCollectionRef); 
       batch.set(newOrderRef, orderData);
 
-      // 2. Add Order Items & Prepare Stock Updates
       const orderItemsCollectionRef = collection(newOrderRef, 'orderItems');
-      
-      // Calculate total quantity per product ID to handle multiple size entries for same product
       const stockUpdates: Record<string, number> = {};
 
       for (const item of cart) {
-        // Add item to order subcollection
         const newItemRef = doc(orderItemsCollectionRef);
+        const itemStatus = item.status || item.availability || 'READY TO SHIP';
+
         batch.set(newItemRef, {
           productId: item.id,
           name: item.name,
@@ -317,17 +309,18 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
           quantity: item.quantity,
           itemPrice: item.price,
           size: item.size || null,
+          status: itemStatus,
         });
 
-        // Accumulate stock decrement
-        if (stockUpdates[item.id]) {
-            stockUpdates[item.id] += item.quantity;
-        } else {
-            stockUpdates[item.id] = item.quantity;
+        if (itemStatus === 'READY TO SHIP') {
+            if (stockUpdates[item.id]) {
+                stockUpdates[item.id] += item.quantity;
+            } else {
+                stockUpdates[item.id] = item.quantity;
+            }
         }
       }
 
-      // 3. Add Stock Updates to Batch
       for (const [productId, quantity] of Object.entries(stockUpdates)) {
           const productRef = doc(firestore, 'products', productId);
           batch.update(productRef, {
@@ -335,10 +328,8 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
           });
       }
 
-      // 4. Commit all changes atomically
       await batch.commit();
 
-      // Save address to user profile (non-blocking, existing logic)
       const userDocRef = doc(firestore, 'users', effectiveUser.uid);
       const billingAddress = {
           firstName: values.firstName,
@@ -351,22 +342,9 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
           country: values.country,
           phone: values.phone,
       };
-      const shippingAddress = values.shipToDifferentAddress ? {
-          firstName: values.shippingFirstName || '',
-          lastName: values.shippingLastName || '',
-          company: values.shippingCompany || '',
-          streetAddress: values.shippingStreetAddress || '',
-          apartment: values.shippingApartment || '',
-          city: values.shippingCity || '',
-          state: values.shippingState || '',
-          pinCode: values.shippingPinCode || '',
-          country: values.shippingCountry || '',
-          phone: values.shippingPhone || '',
-      } : billingAddress;
       
       setDocumentNonBlocking(userDocRef, {
           billingAddress,
-          shippingAddress,
       }, { merge: true });
       
       clearCart();
@@ -374,29 +352,11 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
       router.push(`/thank-you?orderId=${newOrderRef.id}&new=true`);
 
     } catch (error: any) {
-        console.error("Order processing error:", error);
-        
-        // Handle Permission Errors specifically
-        if (error.code === 'permission-denied') {
-             toast({
-                variant: "destructive",
-                title: "Order Failed",
-                description: "There was an issue updating the stock. Please contact support.",
-            });
-        } else {
-            const permissionError = new FirestorePermissionError({
-                path: `users/${effectiveUser.uid}/orders`,
-                operation: 'create',
-                requestResourceData: orderData
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            
-            toast({
-                variant: "destructive",
-                title: "Order Failed",
-                description: "Something went wrong. Please try again.",
-            });
-        }
+         toast({
+            variant: "destructive",
+            title: "Order Failed",
+            description: "Something went wrong. Please try again.",
+        });
         throw error;
     }
   }
@@ -421,15 +381,13 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
         )}
       </AnimatePresence>
       <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-12"
-        >
+        <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          
           <div className="space-y-8">
             <div>
-              <h2 className="font-headline text-2xl mb-4">Billing Details</h2>
-              
-              {!user && (
+               <h2 className="font-headline text-2xl mb-4">Billing Details</h2>
+               
+               {!user && (
                 <>
                   <Button variant="outline" className="w-full mb-4">
                       <GoogleIcon className="mr-2 h-5 w-5" />
@@ -444,186 +402,60 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
                 </>
               )}
 
-              <div className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email Address</FormLabel>
-                      <FormControl>
-                        <Input placeholder="you@example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="firstName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>First Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="lastName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Last Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <FormField
-                  control={form.control}
-                  name="company"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Company name (optional)</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="country"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Country / Region</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a country" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {countries.map((c) => (
-                            <SelectItem key={c} value={c}>
-                              {c}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="streetAddress"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Street Address</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="city"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Town / City</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="state"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>State</FormLabel>
-                         <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a state" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {indianStates.map((s) => (
-                              <SelectItem key={s} value={s}>
-                                {s}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="pinCode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>PIN Code</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                {!user && (
-                  <div className="flex items-center space-x-2 pt-4">
-                      <Checkbox id="create-account" checked={createAccount} onCheckedChange={(checked) => setCreateAccount(checked as boolean)} />
-                      <Label htmlFor="create-account" className="font-normal">Create an account?</Label>
-                  </div>
-                )}
+                <div className="space-y-4">
+                 <FormField control={form.control} name="email" render={({ field }) => (
+                    <FormItem><FormLabel>Email Address</FormLabel><FormControl><Input placeholder="you@example.com" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                 
+                 <div className="grid grid-cols-2 gap-4">
+                    <FormField control={form.control} name="firstName" render={({ field }) => (
+                        <FormItem><FormLabel>First Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="lastName" render={({ field }) => (
+                        <FormItem><FormLabel>Last Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                 </div>
 
-                {createAccount && !user && (
-                  <FormField
-                    control={form.control}
-                    name="createAccountPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Create account password *</FormLabel>
-                        <FormControl>
-                          <Input type="password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
+                 <FormField control={form.control} name="company" render={({ field }) => (
+                    <FormItem><FormLabel>Company name (optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                 )} />
+
+                 <FormField control={form.control} name="country" render={({ field }) => (
+                    <FormItem><FormLabel>Country / Region</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a country" /></SelectTrigger></FormControl><SelectContent>{countries.map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="streetAddress" render={({ field }) => (
+                    <FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="House number and street name" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <FormField control={form.control} name="city" render={({ field }) => (
+                        <FormItem><FormLabel>Town / City</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                      <FormField control={form.control} name="state" render={({ field }) => (
+                        <FormItem><FormLabel>State</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a state" /></SelectTrigger></FormControl><SelectContent>{indianStates.map(s=><SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                      )} />
+                      <FormField control={form.control} name="pinCode" render={({ field }) => (
+                        <FormItem><FormLabel>PIN Code</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                  </div>
+                  
+                   <FormField control={form.control} name="phone" render={({ field }) => (
+                    <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                   
+                   {!user && (
+                    <div className="flex items-center space-x-2 pt-4">
+                        <Checkbox id="create-account" checked={createAccount} onCheckedChange={(c) => setCreateAccount(c as boolean)} />
+                        <Label htmlFor="create-account">Create an account?</Label>
+                    </div>
+                   )}
+                   
+                  {createAccount && !user && (
+                    <FormField control={form.control} name="createAccountPassword" render={({ field }) => (
+                      <FormItem><FormLabel>Create account password *</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                  )}
+
                  <div className="flex items-center space-x-2 pt-4">
                   <Checkbox 
                       id="ship-to-different-address" 
@@ -811,7 +643,8 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
                     </FormItem>
                   )}
                 />
-              </div>
+
+                </div>
             </div>
           </div>
 
@@ -820,11 +653,12 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
               <h2 className="font-headline text-2xl mb-4">Your Order</h2>
               <div className="space-y-4 border border-black/10 p-6 rounded-md">
                 {cart.map((item) => (
-                  <div key={`${item.id}-${item.size || ''}`} className="flex items-center justify-between">
+                  // FIXED: Unique key here as well
+                  <div key={`${item.id}-${item.size || ''}-${item.status || ''}`} className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="relative h-16 w-16 rounded-md overflow-hidden">
                         <Image
-                          src={item.imageUrl}
+                          src={item.imageUrl || "https://placehold.co/100x100?text=No+Image"}
                           alt={item.name}
                           fill
                           className="object-cover"
@@ -834,12 +668,20 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
                       <div>
                         <p className="font-bold">{item.name} <span className="font-normal">× {item.quantity}</span></p>
                         {item.size && <p className="text-sm text-muted-foreground">Size: {item.size}</p>}
-                        {item.tag && (
+                        
+                        {/* FIXED: Display correct status instead of static tag */}
+                        {item.status ? (
+                            <div className={cn("text-xs font-semibold mt-1 flex items-center gap-2", item.status === 'READY TO SHIP' ? "text-green-700" : "text-amber-600")}>
+                                <span className={cn("h-2 w-2 rounded-full", item.status === 'READY TO SHIP' ? 'bg-green-700' : 'bg-amber-600')}></span>
+                                {item.status}
+                            </div>
+                        ) : item.tag && (
                           <div className="flex items-center gap-2 text-xs text-green-700 font-semibold mt-1">
-                            <span className={cn("h-2 w-2 rounded-full", item.tag === 'READY TO SHIP' ? 'bg-green-700' : 'bg-green-700')}></span>
+                            <span className="h-2 w-2 rounded-full bg-green-700"></span>
                             {item.tag}
                           </div>
                         )}
+                        
                       </div>
                     </div>
                     <p>₹{(item.price * item.quantity).toLocaleString()}</p>
@@ -864,12 +706,12 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
                     <p>Total</p>
                     <p>₹{totalWithGst.toLocaleString()}</p>
                   </div>
-                   <p className="text-sm text-muted-foreground pt-2">Estimated delivery time: 3-5 business days.</p>
                 </div>
               </div>
             </div>
-
-            <div>
+            
+            {/* Payment Method Section */}
+             <div>
               <h2 className="font-headline text-2xl mb-4">Payment</h2>
               <FormField
                 control={form.control}
@@ -877,26 +719,14 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
                 render={({ field }) => (
                   <FormItem className="space-y-3">
                     <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="flex flex-col space-y-1"
-                      >
+                      <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-1">
                         <FormItem className="flex items-center space-x-3 space-y-0 border border-black/10 p-4 rounded-md">
-                          <FormControl>
-                            <RadioGroupItem value="card" />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                            Credit/Debit Card
-                          </FormLabel>
+                          <FormControl><RadioGroupItem value="card" /></FormControl>
+                          <FormLabel className="font-normal">Credit/Debit Card</FormLabel>
                         </FormItem>
                         <FormItem className="flex items-center space-x-3 space-y-0 border border-black/10 p-4 rounded-md">
-                          <FormControl>
-                            <RadioGroupItem value="transfer" />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                            Direct Bank Transfer
-                          </FormLabel>
+                          <FormControl><RadioGroupItem value="transfer" /></FormControl>
+                          <FormLabel className="font-normal">Direct Bank Transfer</FormLabel>
                         </FormItem>
                       </RadioGroup>
                     </FormControl>
@@ -905,38 +735,20 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
                 )}
               />
             </div>
-            
-            <div className="space-y-4">
-              <p className="text-xs text-muted-foreground">
-                  Your personal data will be used to process your order, support your experience throughout this website, and for other purposes described in our <Link href="/privacy-policy" className="underline hover:text-foreground">privacy policy</Link>.
-              </p>
-               <FormField
+
+            <FormField
                 control={form.control}
                 name="agreeToTerms"
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border border-black/10 p-4">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
+                    <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                     <div className="space-y-1 leading-none">
-                      <FormLabel>
-                         I have read and agree to the website <Link href="/terms-conditions" className="underline hover:text-foreground">terms and conditions</Link> *
-                      </FormLabel>
+                      <FormLabel>I have read and agree to the website <Link href="/terms-conditions" className="underline hover:text-foreground">terms and conditions</Link> *</FormLabel>
                       <FormMessage />
                     </div>
                   </FormItem>
                 )}
-              />
-            </div>
-
-            <p className="text-xs text-muted-foreground text-center">
-              This site is protected by reCAPTCHA and the Google
-              {' '}<Link href="https://policies.google.com/privacy" className="underline" target="_blank" rel="noopener noreferrer">Privacy Policy</Link> and
-              {' '}<Link href="https://policies.google.com/terms" className="underline" target="_blank" rel="noopener noreferrer">Terms of Service</Link> apply.
-            </p>
+            />
 
             <Button type="submit" className="w-full" size="lg" disabled={form.formState.isSubmitting}>
               Place Order
@@ -951,14 +763,11 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
 export default function CheckoutPage() {
   const { cart, isCartLoaded } = useCart();
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-
-  const handlePlaceOrder = () => {
-    setIsPlacingOrder(true);
-  };
+  const handlePlaceOrder = () => setIsPlacingOrder(true);
   
   if (!isCartLoaded) {
       return (
-        <div className="container mx-auto px-4 py-16 sm:py-24 flex flex-col justify-center items-center min-h-[50vh] gap-4">
+        <div className="container mx-auto px-4 py-16 flex flex-col justify-center items-center min-h-[50vh] gap-4">
           <LoadingLogo size={96} />
           <p className="text-muted-foreground">Loading your cart...</p>
         </div>

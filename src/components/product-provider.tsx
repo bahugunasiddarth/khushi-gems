@@ -17,6 +17,7 @@ interface ProductFromDB {
   material?: 'Gold' | 'Silver';
   availability?: string;
   sizes?: any;
+  stockQuantity?: number; // Added to DB interface
   [key: string]: any; 
 }
 
@@ -129,15 +130,16 @@ function transformProduct(product: ProductFromDB & { id: string }, source: 'prod
         // 6. Generate slug
         const slug = product.slug || product.name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
 
-        // 7. Validate Availability [FIXED SECTION]
-        // Explicitly check if the string matches the allowed union type
+        // 7. Validate Availability
         let availability: 'READY TO SHIP' | 'MADE TO ORDER' = 'READY TO SHIP';
-        
         if (product.availability === 'MADE TO ORDER') {
             availability = 'MADE TO ORDER';
         } else if (product.availability === 'READY TO SHIP') {
             availability = 'READY TO SHIP';
         }
+
+        // 8. Capture Stock Quantity (CRITICAL for your logic)
+        const stockQuantity = typeof product.stockQuantity === 'number' ? product.stockQuantity : 0;
         
         return {
             id: product.id,
@@ -145,17 +147,16 @@ function transformProduct(product: ProductFromDB & { id: string }, source: 'prod
             price: price,
             slug: slug,
             material: material,
-            tag: availability, // Now safely typed
+            tag: availability, 
             imageUrl: mainImageUrl,
             images: images,
             imageHint: product.name,
             category: finalCategory,
             description: product.description || '',
-            // Mark if it's a bestseller
             isBestseller: source === 'bestsellers',
-            // Include all image URLs for ProductCard compatibility
             imageUrls: product.imageUrls || images.map(img => img.url),
-            availability: availability // Now safely typed
+            availability: availability,
+            stockQuantity: stockQuantity // Passing stock to frontend
         };
     } catch (e: any) {
         console.error(`Error transforming product ${product.id}:`, e);
@@ -198,18 +199,20 @@ export const ProductProvider: FC<{ children: ReactNode }> = ({ children }) => {
             .filter((p): p is ProductType => p !== null);
     }, [rawBestsellers]);
 
-    // Combine all products (products + bestsellers) with deduplication by ID
+    // Combine products + bestsellers
     const allProducts = useMemo(() => {
         const productMap = new Map<string, ProductType>();
         
-        // Add regular products first
+        // 1. Add regular products first (This has the latest STOCK info)
         products.forEach(p => productMap.set(p.id, p));
         
-        // Add bestsellers (override with bestseller version if same ID exists)
+        // 2. Add bestsellers
         bestsellers.forEach(p => {
             const existing = productMap.get(p.id);
             if (existing) {
-                // Merge with bestseller flag
+                // IMPORTANT: We use 'existing' (from products collection) as the base
+                // This ensures we keep the updated stock from the products collection
+                // We only append the isBestseller flag.
                 productMap.set(p.id, { ...existing, isBestseller: true });
             } else {
                 productMap.set(p.id, p);
@@ -223,8 +226,8 @@ export const ProductProvider: FC<{ children: ReactNode }> = ({ children }) => {
     const error = productsError || bestsellersError;
 
     const value = {
-        products: allProducts, // Combined array with all products
-        bestsellers, // Separate array of only bestsellers
+        products: allProducts,
+        bestsellers, 
         isLoading,
         error: error as Error | null,
     };

@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -31,10 +30,11 @@ export function CartDrawer() {
             <ScrollArea className="flex-grow px-6">
               <div className="flex flex-col gap-6 py-6">
                 {cart.map((item) => (
-                  <div key={`${item.id}-${item.size || ''}`} className="flex gap-4">
+                  // FIXED: Unique key includes status
+                  <div key={`${item.id}-${item.size || ''}-${item.status || ''}`} className="flex gap-4">
                     <div className="relative h-24 w-24 rounded-md overflow-hidden flex-shrink-0">
                       <Image
-                        src={item.imageUrl}
+                        src={item.imageUrl || "https://placehold.co/100x100?text=No+Image"}
                         alt={item.name}
                         fill
                         className="object-cover"
@@ -47,18 +47,26 @@ export function CartDrawer() {
                        <p className="text-sm font-semibold mt-1 mb-2">
                         ₹{item.price.toLocaleString()}
                       </p>
-                      {item.tag && (
+                      
+                      {/* FIXED: Priority to Item Status (MTO/RTS) over Product Tag */}
+                      {item.status ? (
+                         <div className={cn("text-xs font-semibold mb-2 flex items-center gap-2", item.status === 'READY TO SHIP' ? "text-green-700" : "text-amber-600")}>
+                            <span className={cn("h-2 w-2 rounded-full", item.status === 'READY TO SHIP' ? 'bg-green-700' : 'bg-amber-600')}></span>
+                            {item.status}
+                         </div>
+                      ) : item.tag && (
                         <div className="flex items-center gap-2 text-xs text-green-700 font-semibold mb-2">
-                          <span className={cn("h-2 w-2 rounded-full", item.tag === 'READY TO SHIP' ? 'bg-green-700' : 'bg-green-700')}></span>
+                          <span className="h-2 w-2 rounded-full bg-green-700"></span>
                           {item.tag}
                         </div>
                       )}
+
                       <div className="flex items-center gap-2">
                         <Button
                           variant="outline"
                           size="icon"
                           className="h-6 w-6"
-                          onClick={() => decreaseQuantity(item.id, item.size)}
+                          onClick={() => decreaseQuantity(item.id, item.size, item.status)}
                         >
                           <Minus className="h-3 w-3" />
                         </Button>
@@ -67,7 +75,7 @@ export function CartDrawer() {
                           variant="outline"
                           size="icon"
                           className="h-6 w-6"
-                          onClick={() => increaseQuantity(item.id, item.size)}
+                          onClick={() => increaseQuantity(item.id, item.size, item.status)}
                         >
                           <Plus className="h-3 w-3" />
                         </Button>
@@ -77,7 +85,7 @@ export function CartDrawer() {
                       variant="ghost"
                       size="icon"
                       className="text-muted-foreground hover:text-destructive hover:bg-transparent"
-                      onClick={() => removeItem(item.id, item.size)}
+                      onClick={() => removeItem(item.id, item.size, item.status)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

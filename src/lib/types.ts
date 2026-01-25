@@ -1,4 +1,3 @@
-
 export type ProductImage = {
   url: string;
   hint: string;
@@ -11,6 +10,7 @@ export type Product = {
   imageUrls: string[];
   imageUrl?: string;
   availability: 'READY TO SHIP' | 'MADE TO ORDER';
+  stockQuantity?: number; // Ensure this is present
   imageHint: string; 
   images: ProductImage[]; 
   tag?: string;
@@ -112,7 +112,3 @@ export type RingSizeGuideEntryInches = {
   india: string;
   italySpainSwitzerland: string;
 };
-    
-
-    
-
