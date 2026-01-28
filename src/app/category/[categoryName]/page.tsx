@@ -17,7 +17,6 @@ import { PriceRangeSlider } from "@/components/price-range-slider";
 import { motion } from "framer-motion";
 import { LoadingLogo } from "@/components/loading-logo";
 
-// FIX: Set min price to 0 so test products appear
 const MIN_PRICE = 0;
 const MAX_PRICE = 2575000;
 const PRODUCTS_PER_PAGE = 32;
@@ -46,25 +45,26 @@ export default function CategoryPage() {
     return typeof name === 'string' ? decodeURIComponent(name) : '';
   }, [params.categoryName]);
   
-  const [selectedCategory, setSelectedCategory] = useState(categoryName);
-  
+  // REMOVED: selectedCategory state (it caused the double render)
+  // We use categoryName directly.
+
   const categoryProducts = useMemo(() => {
-    // Filter for Silver AND matching Category
     return allProducts.filter(p => 
       p.material === 'Silver' && 
-      p.category?.toLowerCase() === selectedCategory.toLowerCase()
+      p.category?.toLowerCase() === categoryName.toLowerCase()
     );
-  }, [allProducts, selectedCategory]);
+  }, [allProducts, categoryName]);
   
   const [availability, setAvailability] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([MIN_PRICE, MAX_PRICE]);
   const [sortOption, setSortOption] = useState("default");
   const [currentPage, setCurrentPage] = useState(1);
   
+  // Only reset filters when category changes
   useEffect(() => {
-    setSelectedCategory(categoryName);
     setPriceRange([MIN_PRICE, MAX_PRICE]);
     setCurrentPage(1);
+    // availability is intentionally left out to persist user preference, or add it here if you want to reset it too
   }, [categoryName]);
 
   const filteredProducts = useMemo(() => {
@@ -102,13 +102,15 @@ export default function CategoryPage() {
   }
 
   const handleCategoryChange = (newCategory: string) => {
-    setSelectedCategory(newCategory);
+    // Directly push to router, no local state needed
     router.push(`/category/${encodeURIComponent(newCategory)}`);
   }
 
   if (!categoryName) return notFound();
 
-  if (isLoading) {
+  // FIX: Only show full screen loader if we have NO products at all yet.
+  // This prevents blinking during navigation if data is already cached.
+  if (isLoading && allProducts.length === 0) {
     return (
         <div className="flex justify-center items-center h-screen">
             <LoadingLogo />
@@ -155,7 +157,8 @@ export default function CategoryPage() {
       <SidebarGroup>
           <SidebarGroupLabel>Category</SidebarGroupLabel>
           <SidebarGroupContent>
-              <RadioGroup value={selectedCategory} onValueChange={handleCategoryChange}>
+              {/* Use categoryName (from URL) as value */}
+              <RadioGroup value={categoryName} onValueChange={handleCategoryChange}>
                   {silverCategories.map(cat => (
                       <div key={cat.name} className="flex items-center space-x-2">
                           <RadioGroupItem value={cat.name} id={cat.name} />
@@ -233,7 +236,7 @@ export default function CategoryPage() {
                 <motion.div className="pb-12" {...sectionAnimation}>
                     {products.length > 0 ? (
                         <>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
                           {products.map((product, index) => (
                               <motion.div
                                 key={product.id}

@@ -52,14 +52,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
   }, [cart, isCartLoaded]);
 
-  // --- FIXED: Use functional state update to prevent race conditions ---
   const addItem = (item: Product, quantity: number = 1, size?: string, status?: string) => {
     setCart((prevCart) => {
-        // Default status to product availability if not provided
         const itemStatus = status || item.availability || 'READY TO SHIP';
-
         const existingItemIndex = prevCart.findIndex(
-        (cartItem) => cartItem.id === item.id && cartItem.size === size && cartItem.status === itemStatus
+           (cartItem) => cartItem.id === item.id && cartItem.size === size && cartItem.status === itemStatus
         );
 
         let newCart;

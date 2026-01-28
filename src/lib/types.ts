@@ -19,6 +19,7 @@ export type Product = {
   description: string;
   material: 'Gold' | 'Silver';
   isBestseller?: boolean;
+  priceOnRequest?: boolean;
 };
 
 export type Category = {

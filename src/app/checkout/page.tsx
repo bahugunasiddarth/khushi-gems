@@ -96,6 +96,7 @@ const formSchema = z.object({
 type CheckoutFormValues = z.infer<typeof formSchema>;
 
 function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
+  const [isNavigating, setIsNavigating] = useState(false);
   const [createAccount, setCreateAccount] = useState(false);
   const [shipToDifferentAddress, setShipToDifferentAddress] = useState(false);
   const { cart, cartTotal, clearCart } = useCart();
@@ -351,8 +352,9 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
       localStorage.removeItem('checkoutForm');
       router.push(`/thank-you?orderId=${newOrderRef.id}&new=true`);
 
-    } catch (error: any) {
-         toast({
+} catch (error: any) {
+        setIsNavigating(false); // Reset if error
+        toast({
             variant: "destructive",
             title: "Order Failed",
             description: "Something went wrong. Please try again.",
@@ -364,10 +366,11 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
   const gst = cartTotal * 0.03;
   const totalWithGst = cartTotal + gst;
 
-  return (
+return (
     <>
       <AnimatePresence>
-        {form.formState.isSubmitting && (
+        {/* CHANGED: Check both isSubmitting AND isNavigating */}
+        {(form.formState.isSubmitting || isNavigating) && (
           <motion.div
             className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100] flex flex-col items-center justify-center"
             initial={{ opacity: 0 }}

@@ -1,123 +1,232 @@
-
 "use client";
 
-import React, { useState, useRef } from 'react';
-import Image from 'next/image';
-import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useIsMobile } from '@/hooks/use-mobile';
+import React, { useState, useRef, useEffect } from "react";
+import Image from "next/image";
+import { cn } from "@/lib/utils";
+import { 
+  motion, 
+  AnimatePresence, 
+  useMotionValue, 
+  useSpring, 
+  useTransform 
+} from "framer-motion";
+import { Maximize2, X } from "lucide-react";
 
 type ImageZoomProps = {
   src: string;
   alt: string;
   imageHint: string;
+  // NEW PROPS
+  images: { url: string; hint: string }[];
+  onImageSelect: (image: { url: string; hint: string }) => void;
 };
 
-const LENS_SIZE = 120;
-const ZOOM_LEVEL = 2.5;
+// Configuration
+const ZOOM_LEVEL = 2.5; 
+const LENS_SIZE = 150; 
+const SPRING_CONFIG = { stiffness: 400, damping: 30, mass: 0.5 };
 
-export function ImageZoom({ src, alt, imageHint }: ImageZoomProps) {
-  const [showZoom, setShowZoom] = useState(false);
-  const [[x, y], setXY] = useState([0, 0]);
-  const [[imgWidth, imgHeight], setImgSize] = useState([0, 0]);
-  const isMobile = useIsMobile();
+export function ImageZoom({ src, alt, imageHint, images, onImageSelect }: ImageZoomProps) {
+  const [isHovering, setIsHovering] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [imgSize, setImgSize] = useState({ width: 0, height: 0 });
   
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - left;
-    const y = e.clientY - top;
-    setXY([x, y]);
-    setImgSize([width, height]);
+  const imageAreaRef = useRef<HTMLDivElement>(null);
+
+  // Motion Values
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  // Springs
+  const x = useSpring(mouseX, SPRING_CONFIG);
+  const y = useSpring(mouseY, SPRING_CONFIG);
+
+  // Transforms
+  const lensX = useTransform(x, (val) => val - LENS_SIZE / 2);
+  const lensY = useTransform(y, (val) => val - LENS_SIZE / 2);
+
+  const bgX = useTransform(x, [0, imgSize.width || 1], [0, 100]);
+  const bgY = useTransform(y, [0, imgSize.height || 1], [0, 100]);
+  
+  const backgroundPosition = useTransform(
+    [bgX, bgY],
+    ([latestX, latestY]) => `${latestX}% ${latestY}%`
+  );
+
+  // Update image size on mount/resize
+  useEffect(() => {
+    if (imageAreaRef.current) {
+      const { width, height } = imageAreaRef.current.getBoundingClientRect();
+      setImgSize({ width, height });
+    }
+  }, [src]);
+
+  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!imageAreaRef.current) return;
+    const { left, top } = imageAreaRef.current.getBoundingClientRect();
+    
+    const posX = e.clientX - left;
+    const posY = e.clientY - top;
+
+    // Snap instantly to cursor on enter
+    mouseX.set(posX);
+    mouseY.set(posY);
+    x.set(posX);
+    y.set(posY);
+
+    setIsHovering(true);
   };
 
-  const handleMouseEnter = () => {
-    if (!isMobile) {
-      setShowZoom(true);
-    }
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!imageAreaRef.current) return;
+    const { left, top, width, height } = imageAreaRef.current.getBoundingClientRect();
+    
+    const posX = e.clientX - left;
+    const posY = e.clientY - top;
+    
+    // Clamp values
+    mouseX.set(Math.max(0, Math.min(width, posX)));
+    mouseY.set(Math.max(0, Math.min(height, posY)));
   };
 
   return (
-    <div className="relative flex items-start gap-4">
+    <>
+      {/* WRAPPER */}
+      <div className="relative z-20 group">
+        
+        {/* IMAGE AREA */}
         <div 
-            className="relative aspect-square w-full"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={() => setShowZoom(false)}
-            onMouseMove={handleMouseMove}
+          className="relative aspect-square w-full overflow-hidden rounded-xl border border-black/5 bg-secondary/20 cursor-crosshair"
+          ref={imageAreaRef}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={() => setIsHovering(false)}
+          onMouseMove={handleMouseMove}
+          onClick={() => setIsFullscreen(true)}
         >
-            <Image
+          <Image
+            src={src}
+            alt={alt}
+            fill
+            className="object-cover"
+            data-ai-hint={imageHint}
+            priority
+            sizes="(max-width: 768px) 100vw, 50vw"
+          />
+          
+          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/50 text-white p-2 rounded-full backdrop-blur-sm pointer-events-none">
+            <Maximize2 className="w-4 h-4" />
+          </div>
+
+          <AnimatePresence>
+            {isHovering && !isFullscreen && (
+               <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="pointer-events-none absolute top-0 left-0 border border-white/50 bg-white/20 backdrop-blur-[2px] shadow-sm rounded-lg z-30 hidden lg:block"
+                  style={{
+                    width: LENS_SIZE,
+                    height: LENS_SIZE,
+                    x: lensX, 
+                    y: lensY, 
+                  }}
+                />
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* ZOOM PANE */}
+        <AnimatePresence>
+          {isHovering && !isFullscreen && (
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.2 }}
+              className="absolute left-[103%] top-0 z-50 hidden lg:block h-full w-[120%] overflow-hidden rounded-xl border border-black/10 bg-white shadow-2xl pointer-events-none"
+            >
+              <motion.div
+                className="h-full w-full"
+                style={{
+                  backgroundImage: `url(${src})`,
+                  backgroundSize: `${ZOOM_LEVEL * 100}%`,
+                  backgroundPosition: backgroundPosition,
+                  backgroundRepeat: "no-repeat",
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* FULLSCREEN LIGHTBOX WITH GALLERY */}
+      <AnimatePresence>
+        {isFullscreen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/95 backdrop-blur-md"
+            onClick={() => setIsFullscreen(false)}
+          >
+            {/* Close Button */}
+            <button 
+              className="absolute top-6 right-6 text-white/70 hover:text-white p-2 bg-white/10 rounded-full transition-colors z-[110]"
+              onClick={() => setIsFullscreen(false)}
+            >
+              <X className="w-8 h-8" />
+            </button>
+
+            {/* Main Fullscreen Image */}
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full flex-grow max-w-5xl flex items-center justify-center p-4 pb-24"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Image
                 src={src}
                 alt={alt}
                 fill
-                className="object-cover rounded-lg"
-                data-ai-hint={imageHint}
+                className="object-contain"
+                quality={100}
                 priority
-            />
-            
-            <AnimatePresence>
-            {showZoom && (
-                <>
-                    {/* Lens */}
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        transition={{ duration: 0.2, ease: 'easeOut' }}
-                        className="pointer-events-none absolute z-10 border-2 border-primary bg-white/20"
-                        style={{
-                            width: LENS_SIZE,
-                            height: LENS_SIZE,
-                            top: y - LENS_SIZE / 2,
-                            left: x - LENS_SIZE / 2,
-                        }}
-                    />
+              />
+            </motion.div>
 
-                    {/* Black and White Overlay */}
-                    <motion.div
-                         initial={{ opacity: 0 }}
-                         animate={{ opacity: 1 }}
-                         exit={{ opacity: 0 }}
-                         transition={{ duration: 0.2 }}
-                        className="pointer-events-none absolute inset-0 z-0 bg-black/40 backdrop-grayscale"
-                        style={{
-                            clipPath: `polygon(
-                                0% 0%, 
-                                0% 100%, 
-                                ${((x - LENS_SIZE / 2) / imgWidth) * 100}% 100%, 
-                                ${((x - LENS_SIZE / 2) / imgWidth) * 100}% ${((y - LENS_SIZE / 2) / imgHeight) * 100}%, 
-                                ${((x + LENS_SIZE / 2) / imgWidth) * 100}% ${((y - LENS_SIZE / 2) / imgHeight) * 100}%, 
-                                ${((x + LENS_SIZE / 2) / imgWidth) * 100}% ${((y + LENS_SIZE / 2) / imgHeight) * 100}%, 
-                                ${((x - LENS_SIZE / 2) / imgWidth) * 100}% ${((y + LENS_SIZE / 2) / imgHeight) * 100}%, 
-                                ${((x - LENS_SIZE / 2) / imgWidth) * 100}% 100%, 
-                                100% 100%, 
-                                100% 0%
-                            )`
-                        }}
-                    />
-                </>
-            )}
-            </AnimatePresence>
-        </div>
-        <AnimatePresence>
-            {showZoom && (
-                 <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ duration: 0.2, ease: 'easeOut' }}
-                    className="pointer-events-none absolute left-[105%] top-0 hidden h-full w-full overflow-hidden rounded-lg border bg-white shadow-xl lg:block"
-                >
-                    <div
-                        className="h-full w-full"
-                        style={{
-                            backgroundImage: `url(${src})`,
-                            backgroundSize: `${imgWidth * ZOOM_LEVEL}px ${imgHeight * ZOOM_LEVEL}px`,
-                            backgroundPosition: `-${(x * ZOOM_LEVEL) - (LENS_SIZE / 2 * (ZOOM_LEVEL - 1))}px -${(y * ZOOM_LEVEL) - (LENS_SIZE / 2 * (ZOOM_LEVEL - 1))}px`,
-                            backgroundRepeat: 'no-repeat'
-                        }}
-                    ></div>
-                </motion.div>
-            )}
-        </AnimatePresence>
-    </div>
+            {/* Thumbnail Strip */}
+            <motion.div 
+               initial={{ y: 50, opacity: 0 }}
+               animate={{ y: 0, opacity: 1 }}
+               exit={{ y: 50, opacity: 0 }}
+               className="absolute bottom-6 left-0 right-0 flex justify-center gap-3 px-4 overflow-x-auto pb-2 z-[110]"
+               onClick={(e) => e.stopPropagation()}
+            >
+                <div className="flex gap-3 bg-black/40 p-2 rounded-xl backdrop-blur-sm border border-white/10">
+                    {images.map((img, idx) => (
+                        <button 
+                            key={idx}
+                            onClick={() => onImageSelect(img)}
+                            className={cn(
+                                "relative h-16 w-16 rounded-lg overflow-hidden border-2 transition-all hover:scale-105 flex-shrink-0",
+                                src === img.url ? "border-white scale-110" : "border-transparent opacity-60 hover:opacity-100"
+                            )}
+                        >
+                            <Image 
+                                src={img.url} 
+                                alt={`Thumbnail ${idx}`} 
+                                fill 
+                                className="object-cover" 
+                            />
+                        </button>
+                    ))}
+                </div>
+            </motion.div>
+
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
@@ -241,7 +240,8 @@ export default function SilverCategoryPage() {
                 <motion.div className="pb-12" {...sectionAnimation}>
                     {products.length > 0 ? (
                       <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                        {/* UPDATED: grid-cols-2 on mobile */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
                         {products.map((product, index) => (
                             <motion.div
                               key={product.id}

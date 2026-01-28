@@ -77,12 +77,13 @@ const ClipIcon = () => (
 
 export default function ReviewsSection() {
   return (
-    <section className="w-full bg-[hsl(40,83%,90.2%)] py-16 overflow-hidden relative">
+    <section id="reviews-anchor" className="w-full bg-[hsl(40,83%,90.2%)] py-16 overflow-hidden relative">
       <div className="container mx-auto px-4">
         
-        <h2 className="text-4xl md:text-5xl font-serif text-center text-[#1e3a8a] mb-16 tracking-wide">
-          Customer Testimonials
-        </h2>
+        <h2 className="text-4xl md:text-5xl font-serif text-center text-black mb-16 tracking-wide">
+  Customer Reviews You Can Trust
+</h2>
+
 
         {/* String Background */}
         <div className="absolute top-[180px] left-0 w-full h-20 z-0 pointer-events-none hidden lg:block">
