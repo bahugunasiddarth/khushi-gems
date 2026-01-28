@@ -42,8 +42,6 @@ import { LoadingLogo } from "@/components/loading-logo";
 import { collection, getDocs } from "firebase/firestore";
 import { initializeFirebase } from "@/firebase";
 
-// ... (keep generateSlug, Breadcrumbs, sectionAnimation logic) ...
-
 const generateSlug = (name: string) => {
   return name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
 };
@@ -94,8 +92,6 @@ export default function ProductPage() {
     if (isContextLoading) return;
 
     const fetchAndFindProduct = async () => {
-        // ... (Keep existing fetch logic) ...
-        // Ensure manual fetch also checks for priceOnRequest in the data object construction
          try {
             const { firestore } = initializeFirebase();
             const productsRef = collection(firestore, 'products');
@@ -135,7 +131,7 @@ export default function ProductPage() {
                     tag: foundData.availability || 'READY TO SHIP',
                     images: [],
                     imageUrl: '',
-                    priceOnRequest: foundData.priceOnRequest === true // Capture Flag
+                    priceOnRequest: foundData.priceOnRequest === true
                 };
 
                 let images = [];
@@ -174,12 +170,12 @@ export default function ProductPage() {
 
   const inWishlist = isItemInWishlist(product.id);
 
-  // --- CHANGED LOGIC START ---
   const isQueryForRate = product.priceOnRequest === true; 
 
+  // --- CHANGED LOGIC START: Updated to match product-card.tsx exactly ---
   const handleQueryForRate = () => {
-    const message = `Hi, I'm interested in buying ${product.name}. Can you please tell me the current rate?`;
-    window.open(`https://wa.link/29gk8a?text=${encodeURIComponent(message)}`, '_blank');
+    const message = `Hi, I'm interested in ${product.name}. Can you please tell me the current rate?`;
+    window.open(`https://wa.me/919928070606?text=${encodeURIComponent(message)}`, '_blank');
   };
   // --- CHANGED LOGIC END ---
 
@@ -189,9 +185,7 @@ export default function ProductPage() {
     else addToWishlist(product);
   };
   
-  // (Keep handleAddToCart logic, but it won't be used if isQueryForRate is true)
   const handleAddToCart = () => {
-    // ... existing logic ...
     let finalSize: string | undefined = undefined;
     if (product.category === 'Rings') {
       finalSize = size === 'Custom' ? customSize : size;
@@ -221,10 +215,9 @@ export default function ProductPage() {
   };
 
   const similarProducts = allProducts.filter(p => p.category === product.category && p.id !== product.id).slice(0, 5);
-  const bestsellers = allProducts.filter(p => p.material === product.material && p.isBestseller).slice(0, 8);
 
   return (
-<motion.div className="container mx-auto px-4 py-12 overflow-hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <motion.div className="container mx-auto px-4 py-12 overflow-hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <Breadcrumbs product={product} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 mt-6">
         
@@ -240,15 +233,14 @@ export default function ProductPage() {
                 </button>
               ))}
             </div>
-            
             <div className="relative flex-1">
-                {/* UPDATED COMPONENT USAGE */}
+                {/* ImageZoom with proper props */}
                 <ImageZoom 
-                    src={activeImage.url} 
-                    alt={product.name} 
-                    imageHint={activeImage.hint} 
-                    images={product.images} // Pass all images
-                    onImageSelect={setUserSelectedImage} // Pass function to update state
+                  src={activeImage.url} 
+                  alt={product.name} 
+                  imageHint={activeImage.hint}
+                  images={product.images}
+                  onImageSelect={setUserSelectedImage} 
                 />
             </div>
         </motion.div>
@@ -256,7 +248,6 @@ export default function ProductPage() {
         <motion.div className="flex flex-col" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }}>
           <h1 className="font-headline text-4xl md:text-5xl">{product.name}</h1>
           
-          {/* PRICE SECTION: Hide if Query For Rate */}
           {isQueryForRate ? (
              <div className="my-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-900">
                <p className="font-semibold flex items-center gap-2">
@@ -271,7 +262,6 @@ export default function ProductPage() {
 
           <Separator className="my-4 bg-black/10" />
           
-          {/* Availability Tag */}
           {!isQueryForRate && product.tag && (
             <div className={cn("flex items-center gap-2 text-sm font-semibold mb-6", product.tag === 'READY TO SHIP' ? "text-green-700" : "text-amber-600")}>
               <span className={cn("h-2 w-2 rounded-full", product.tag === 'READY TO SHIP' ? 'bg-green-700' : 'bg-amber-600')}></span>
@@ -281,13 +271,19 @@ export default function ProductPage() {
           
           <p className="text-base text-foreground/80 mb-6">{product.description}</p>
 
-          {/* Ring Size Selection (Only show if NOT Query Rate? Or kept for specifics? Usually keep it to inform the query) */}
           {product.category === 'Rings' && (
             <div className="space-y-4 my-6">
-               {/* ... (Keep Ring Size Selector) ... */}
                <div className="flex items-center justify-between max-w-sm">
                 <Label htmlFor="ring-size" className="font-semibold">Ring Size</Label>
-                 {/* ... (Dialog code) ... */}
+                 <Dialog>
+                    <DialogTrigger asChild>
+                        <Button variant="link" className="h-auto p-0 text-xs">Size Guide</Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-3xl overflow-y-auto max-h-[90vh]">
+                        {/* Size guide image or table */}
+                        <Image src="/size-guide.jpg" alt="Ring Size Guide" width={800} height={600} className="w-full h-auto" />
+                    </DialogContent>
+                 </Dialog>
               </div>
               <Select value={size} onValueChange={setSize}>
                 <SelectTrigger className="max-w-sm"><SelectValue placeholder="Select a size" /></SelectTrigger>
@@ -299,7 +295,6 @@ export default function ProductPage() {
             </div>
           )}
           
-          {/* Quantity Selector - Hide if Query For Rate */}
           {!isQueryForRate && (
             <div className="flex items-center gap-4 mb-4">
                 <p className="font-semibold">Quantity:</p>
@@ -311,7 +306,6 @@ export default function ProductPage() {
             </div>
           )}
           
-          {/* Action Buttons */}
           <div className="flex gap-2 max-w-sm mt-4">
              {isQueryForRate ? (
                  <Button onClick={handleQueryForRate} size="lg" className="flex-grow bg-[#25D366] hover:bg-[#128C7E] text-white font-bold text-lg">
@@ -328,12 +322,11 @@ export default function ProductPage() {
              </Button>
           </div>
           
-           {/* ... (Keep Shipping Dialog) ... */}
+           {/* Additional info like Shipping/Returns triggers could go here */}
 
         </motion.div>
       </div>
       
-       {/* ... (Keep Carousel Sections) ... */}
        <motion.div className="mt-24" {...sectionAnimation}>
           <h2 className="font-headline text-3xl text-center mb-8">You may also like</h2>
           <Carousel opts={{ align: 'start', loop: true }} className="w-full">

@@ -91,7 +91,7 @@ export function ProductCard({ product }: ProductCardProps) {
              <Button 
               size="icon" 
               className="h-8 w-8 rounded-full"
-              onClick={handleAddToCart}
+              onClick={handleWishlistClick} 
               aria-label={`Add ${product.name} to wishlist`}
               variant="secondary"
             >

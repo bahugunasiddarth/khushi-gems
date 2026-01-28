@@ -11,7 +11,7 @@ interface CloudinaryUploadProps {
 export function CloudinaryUpload({ onUploadSuccess }: CloudinaryUploadProps) {
   return (
     <CldUploadWidget 
-      uploadPreset="<khushi_uploads>"
+      uploadPreset="khushi_uploads"
       onSuccess={(result: any) => {
         // Cloudinary returns the secure_url on success
         if (result.info?.secure_url) {
