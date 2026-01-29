@@ -107,7 +107,7 @@ export default function AboutPage() {
           transition={{ duration: 0.8 }}
         >
           <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/5 border border-primary/10 rounded-full mb-8">
-            <span className="text-xs font-semibold tracking-widest uppercase text-primary">Since 1998</span>
+            <span className="text-xs font-semibold tracking-widest uppercase text-primary">Since 2000</span>
           </div>
           <h1 className="text-5xl md:text-7xl font-headline font-bold mb-8 tracking-tight leading-[1.1]">
             Our Legacy,<br />
@@ -378,7 +378,7 @@ export default function AboutPage() {
           transition={{ delay: 0.5 }}
         >
           <p className="text-xs uppercase tracking-widest text-muted-foreground">
-            Khushi Gems & Jewels • Jaipur, India • Est. 1998
+            Khushi Gems & Jewels • Jaipur, India • Est. 2000
           </p>
         </motion.div>
       </div>
