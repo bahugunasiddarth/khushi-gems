@@ -167,15 +167,7 @@ export default function Home() {
                 ))}
               </motion.h2>
             </AnimatePresence>
-            
-            <motion.p 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              transition={{ delay: 1, duration: 1 }}
-              className="mt-6 text-sm md:text-base font-light tracking-wide max-w-xs md:max-w-md mx-auto opacity-90"
-            >
-              Timeless elegance handcrafted for the modern soul.
-            </motion.p>
+
           </div>
 
           <div className="absolute bottom-20 right-90 hidden md:flex gap-3">
