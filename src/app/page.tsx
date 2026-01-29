@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { ProductCard } from '@/components/product-card';
 import { ImageMarquee } from '@/components/image-marquee';
 import { heroSlides, silverCategories, collections, silverInstagramPosts } from '@/lib/data';
-import { Instagram, Loader2, Diamond, ArrowRight } from 'lucide-react'; // Added Diamond/ArrowRight
+import { Instagram, Loader2, Diamond, ArrowRight } from 'lucide-react'; 
 import Autoplay from "embla-carousel-autoplay"
 import { Marquee } from '@/components/marquee';
 import { ExhibitionCarousel } from '@/components/exhibition-carousel';
@@ -30,7 +30,7 @@ const sectionAnimation = {
   initial: { opacity: 0, y: 40 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: "-50px" },
-  transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } // Custom "Luxury" bezier
+  transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } 
 };
 
 const itemAnimation = {
@@ -97,7 +97,8 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col gap-24 md:gap-12 overflow-hidden bg-background text-foreground">
+    // CHANGED: gap-24 to gap-16 md:gap-24 to reduce spacing on mobile
+    <div className="flex flex-col gap-16 md:gap-24 overflow-hidden bg-background text-foreground">
       
       {/* --- HERO SECTION --- */}
       <motion.section 
@@ -115,12 +116,14 @@ export default function Home() {
               stopOnInteraction: false,
             }),
           ]}
-          className="w-full h-screen md:h-[95vh]"
+          // CHANGED: h-screen to h-[100dvh] for better mobile browser support
+          className="w-full h-[100dvh] md:h-[95vh]"
           data-ai-hint="hero slider"
         >
           <CarouselContent>
             {heroSlides.map((slide) => (
-              <CarouselItem key={slide.id} className="h-screen md:h-[87vh]">
+              // CHANGED: Adjusted height for mobile
+              <CarouselItem key={slide.id} className="h-[100dvh] md:h-[87vh]">
                 <div className="relative h-full w-full">
                   <Image
                     src={slide.imageUrl}
@@ -130,7 +133,6 @@ export default function Home() {
                     priority={slide.id === 1}
                     data-ai-hint={slide.imageHint}
                   />
-                  {/* Refined Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/60" />
                 </div>
               </CarouselItem>
@@ -156,7 +158,8 @@ export default function Home() {
                 initial="initial"
                 animate="animate"
                 exit="initial"
-                className="font-headline text-5xl md:text-7xl lg:text-8xl flex flex-wrap justify-center overflow-hidden py-4 leading-[0.9] tracking-tight"
+                // CHANGED: Text sizing for responsiveness (text-4xl for mobile)
+                className="font-headline text-4xl sm:text-5xl md:text-7xl lg:text-8xl flex flex-wrap justify-center overflow-hidden py-4 leading-[1.1] md:leading-[0.9] tracking-tight"
                 style={{ textShadow: '0 4px 20px rgba(0,0,0,0.3)' }}
               >
                 {heroSlides[currentSlide]?.title.split("").map((char, index) => (
@@ -175,7 +178,7 @@ export default function Home() {
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 
               transition={{ delay: 1, duration: 1 }}
-              className="mt-6 text-sm md:text-base font-light tracking-wide max-w-md mx-auto opacity-90"
+              className="mt-6 text-sm md:text-base font-light tracking-wide max-w-xs md:max-w-md mx-auto opacity-90"
             >
               Timeless elegance handcrafted for the modern soul.
             </motion.p>
@@ -189,14 +192,15 @@ export default function Home() {
       </motion.section>
 
       {/* --- CATEGORIES SECTION --- */}
-      <motion.section className="container mx-auto px-40" data-ai-hint="shop by category" {...sectionAnimation}>
+      {/* CHANGED: px-40 to responsive padding px-4 md:px-12 lg:px-40 */}
+      <motion.section className="container mx-auto px-4 md:px-12 lg:px-40" data-ai-hint="shop by category" {...sectionAnimation}>
         <div className="max-w-screen-2xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10 md:mb-16">
             <span className="text-xs font-bold tracking-[0.2em] text-primary uppercase block mb-3">Explore</span>
-            <h2 className="font-headline text-4xl md:text-5xl tracking-tight">Shop by Category</h2>
+            <h2 className="font-headline text-3xl md:text-4xl lg:text-5xl tracking-tight">Shop by Category</h2>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
             {silverCategories.map((category) => (
               <Link href={`/category/${encodeURIComponent(category.name)}`} key={category.name}>
                 <Card className="group relative overflow-hidden rounded-xl border-none shadow-none bg-gray-100 aspect-[3/4]">
@@ -211,8 +215,9 @@ export default function Home() {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
                       
-                      <div className="absolute bottom-0 left-0 w-full p-6 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
-                        <h3 className="font-headline text-xl text-white tracking-wide mb-1">{category.name}</h3>
+                      <div className="absolute bottom-0 left-0 w-full p-4 md:p-6 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                        {/* CHANGED: Text size for mobile */}
+                        <h3 className="font-headline text-lg md:text-xl text-white tracking-wide mb-1">{category.name}</h3>
                         <div className="h-px w-0 group-hover:w-12 bg-white/50 mx-auto transition-all duration-500 delay-100"></div>
                       </div>
                     </div>
@@ -225,17 +230,17 @@ export default function Home() {
       </motion.section>
 
       {/* --- BESTSELLERS SECTION --- */}
-      <motion.section className="w-full bg-secondary/50 py-20 md:py-32" data-ai-hint="bestsellers carousel" {...sectionAnimation}>
-        <div className="container mx-auto px-6">
+      <motion.section className="w-full bg-secondary/50 py-16 md:py-32" data-ai-hint="bestsellers carousel" {...sectionAnimation}>
+        <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-screen-2xl mx-auto">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-12 px-2">
-              <div className="text-center md:text-left">
+            <div className="flex flex-col md:flex-row justify-between items-end mb-10 md:mb-12 px-2">
+              <div className="text-center md:text-left w-full md:w-auto">
                 <span className="text-xs font-bold tracking-[0.2em] text-primary uppercase block mb-3">Curated For You</span>
-                <h2 className="font-headline text-4xl md:text-5xl tracking-tight mb-2">Our Bestsellers</h2>
-                <p className="text-muted-foreground font-light">Timeless silver pieces, handcrafted with love</p>
+                <h2 className="font-headline text-3xl md:text-5xl tracking-tight mb-2">Our Bestsellers</h2>
+                <p className="text-muted-foreground font-light text-sm md:text-base">Timeless silver pieces, handcrafted with love</p>
               </div>
               <div className="hidden md:flex gap-2">
-                {/* Custom Navigation Placeholders if needed, or keep standard */}
+                {/* Custom Navigation Placeholders if needed */}
               </div>
             </div>
             
@@ -254,9 +259,10 @@ export default function Home() {
                   ]}
                   className="w-full group/carousel"
                 >
-                  <CarouselContent className="-ml-6">
+                  <CarouselContent className="-ml-4 md:-ml-6">
                     {displayedBestsellers.slice(0, 8).map((product) => (
-                      <CarouselItem key={product.id} className="basis-1/2 md:basis-1/3 lg:basis-1/4 pl-6">
+                      // CHANGED: basis-[75%] for mobile (shows 1 card with peek), sm:basis-1/2
+                      <CarouselItem key={product.id} className="basis-[75%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4 pl-4 md:pl-6">
                         <ProductCard product={product} />
                       </CarouselItem>
                     ))}
@@ -275,112 +281,112 @@ export default function Home() {
         </div>
       </motion.section>
       
-{/* --- ABOUT SECTION --- */}
-<motion.section
-  className="container mx-auto px-6 py-12"
-  data-ai-hint="introduction section"
-  {...sectionAnimation}
->
-  <div className="grid md:grid-cols-2 gap-16 lg:gap-24 items-center max-w-6xl mx-auto">
+      {/* --- ABOUT SECTION --- */}
+      <motion.section
+        className="container mx-auto px-4 md:px-6 py-12"
+        data-ai-hint="introduction section"
+        {...sectionAnimation}
+      >
+        <div className="grid md:grid-cols-2 gap-12 lg:gap-24 items-center max-w-6xl mx-auto">
 
-    {/* IMAGE */}
-    <motion.div className="relative group order-2 md:order-1" {...itemAnimation}>
-      <div className="relative z-10 overflow-hidden rounded-xl shadow-2xl aspect-[4/5]">
-        <Image
-          src="https://i.ibb.co/xPFRtDC/imgi-8-AG0il-Szzl-Il40-s-Vwin-ZVT8-T3h0v-Un8dpsf-Ir-Fnn-Qs-Nh-FUQ9d9q-C5x-ZK-bwv-Nj46gy-WVzvx-AA87g-G.png"
-          alt="Hawa Mahal in Jaipur"
-          fill
-          className="object-cover transition-transform duration-700 group-hover:scale-105"
-        />
-        <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-500" />
-      </div>
+          {/* IMAGE */}
+          <motion.div className="relative group order-2 md:order-1" {...itemAnimation}>
+            <div className="relative z-10 overflow-hidden rounded-xl shadow-2xl aspect-[4/5]">
+              <Image
+                src="https://i.ibb.co/xPFRtDC/imgi-8-AG0il-Szzl-Il40-s-Vwin-ZVT8-T3h0v-Un8dpsf-Ir-Fnn-Qs-Nh-FUQ9d9q-C5x-ZK-bwv-Nj46gy-WVzvx-AA87g-G.png"
+                alt="Hawa Mahal in Jaipur"
+                fill
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-500" />
+            </div>
 
-      <div className="absolute -bottom-6 -left-6 w-2/3 h-2/3 border border-primary/20 rounded-bl-3xl -z-0" />
-    </motion.div>
+            <div className="absolute -bottom-6 -left-6 w-2/3 h-2/3 border border-primary/20 rounded-bl-3xl -z-0 hidden md:block" />
+          </motion.div>
 
-    {/* CONTENT */}
-    <motion.div className="order-1 md:order-2" {...itemAnimation}>
-      <span className="text-xs font-bold tracking-[0.2em] text-primary uppercase block mb-4">
-        Our Heritage
-      </span>
+          {/* CONTENT */}
+          <motion.div className="order-1 md:order-2" {...itemAnimation}>
+            <span className="text-xs font-bold tracking-[0.2em] text-primary uppercase block mb-4">
+              Our Heritage
+            </span>
 
-      <h2 className="font-headline text-4xl md:text-5xl lg:text-6xl mb-8 tracking-tight leading-[1.1]">
-        <span className="text-primary italic">
-          Khushi Gems & Jewels
-        </span>{" "}
-        – A Legacy of Jaipur&apos;s Timeless Craftsmanship
-      </h2>
+            {/* CHANGED: Text sizing for mobile */}
+            <h2 className="font-headline text-3xl md:text-5xl lg:text-6xl mb-8 tracking-tight leading-[1.15]">
+              <span className="text-primary italic">
+                Khushi Gems & Jewels
+              </span>{" "}
+              – A Legacy of Jaipur&apos;s Timeless Craftsmanship
+            </h2>
 
-      <div className="space-y-6 text-lg text-muted-foreground leading-relaxed font-light">
+            <div className="space-y-6 text-base md:text-lg text-muted-foreground leading-relaxed font-light">
 
-        <p>
-          Rooted in the heart of the Old Pink City,{" "}
-          <span className="font-semibold text-foreground">
-            Khushi Gems & Jewels
-          </span>{" "}
-          stands as a proud custodian of Jaipur&apos;s rich jewellery heritage.
-          With over{" "}
-          <span className="relative font-semibold text-primary after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full after:bg-primary/40">
-            25 years of excellence
-          </span>
-          , our journey began in Johari Bazar, near the iconic Hawa Mahal, where{" "}
-          <span className="relative font-semibold text-primary after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full after:bg-primary/40">
-            artistry, culture, and craftsmanship
-          </span>{" "}
-          come together to create jewellery that transcends time.
-        </p>
+              <p>
+                Rooted in the heart of the Old Pink City,{" "}
+                <span className="font-semibold text-foreground">
+                  Khushi Gems & Jewels
+                </span>{" "}
+                stands as a proud custodian of Jaipur&apos;s rich jewellery heritage.
+                With over{" "}
+                <span className="relative font-semibold text-primary after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full after:bg-primary/40">
+                  25 years of excellence
+                </span>
+                , our journey began in Johari Bazar, near the iconic Hawa Mahal, where{" "}
+                <span className="relative font-semibold text-primary after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full after:bg-primary/40">
+                  artistry, culture, and craftsmanship
+                </span>{" "}
+                come together to create jewellery that transcends time.
+              </p>
 
-        <p>
-          Every creation reflects the soul of Rajasthan—its regal history,
-          intricate architecture, vibrant colours, and royal traditions.{" "}
-          <span className="relative font-semibold text-primary after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full after:bg-primary/40">
-            Inspired by the grandeur of Rajasthani culture and the timeless beauty
-            of Jaipur
-          </span>
-          , our designs celebrate heritage while embracing contemporary elegance.
-        </p>
+              <p>
+                Every creation reflects the soul of Rajasthan—its regal history,
+                intricate architecture, vibrant colours, and royal traditions.{" "}
+                <span className="relative font-semibold text-primary after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full after:bg-primary/40">
+                  Inspired by the grandeur of Rajasthani culture and the timeless beauty
+                  of Jaipur
+                </span>
+                , our designs celebrate heritage while embracing contemporary elegance.
+              </p>
 
-        <div className="pt-4">
-          <Button
-            variant="link"
-            asChild
-            className="p-0 text-base font-bold text-foreground group"
-          >
-            <Link href="/about" className="flex items-center gap-2">
-              Read Our Story
-              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-            </Link>
-          </Button>
+              <div className="pt-4">
+                <Button
+                  variant="link"
+                  asChild
+                  className="p-0 text-base font-bold text-foreground group"
+                >
+                  <Link href="/about" className="flex items-center gap-2">
+                    Read Our Story
+                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+
         </div>
-      </div>
-    </motion.div>
-
-  </div>
-</motion.section>
-
+      </motion.section>
 
       {/* --- MARQUEE --- */}
- <motion.section className="py-2 bg-black text-beige my-0" data-ai-hint="dynamic banner" {...sectionAnimation}>
+      <motion.section className="py-2 bg-black text-beige my-0" data-ai-hint="dynamic banner" {...sectionAnimation}>
         <Marquee baseVelocity={-2}>
-             <span className="font-headline text-2xl mx-4">Khushi Gems and Jewellery</span>
-             <span className="font-headline text-2xl mx-4">Handcrafted Bridal jewellery</span>
-             <span className="font-headline text-2xl mx-4">Jaipur-Based Artisan</span>
+             <span className="font-headline text-lg md:text-2xl mx-4">Khushi Gems and Jewellery</span>
+             <span className="font-headline text-lg md:text-2xl mx-4">Handcrafted Bridal jewellery</span>
+             <span className="font-headline text-lg md:text-2xl mx-4">Jaipur-Based Artisan</span>
         </Marquee>
       </motion.section>
       
       {/* --- EXHIBITIONS SECTION --- */}
-      <motion.section id="exhibitions" className="w-full bg-secondary/50 py-20 md:py-32" data-ai-hint="exhibitions and collections" {...sectionAnimation}>
-          <div className="container mx-auto px-6">
+      <motion.section id="exhibitions" className="w-full bg-secondary/50 py-16 md:py-32" data-ai-hint="exhibitions and collections" {...sectionAnimation}>
+          <div className="container mx-auto px-4 md:px-6">
               <div className="max-w-screen-2xl mx-auto">
-                   <div className="text-center mb-16">
+                    <div className="text-center mb-12 md:mb-16">
                       <span className="text-xs font-bold tracking-[0.2em] text-primary uppercase block mb-3">Experience</span>
-                      <h2 className="font-headline text-4xl md:text-5xl tracking-tight">Exhibitions</h2>
+                      <h2 className="font-headline text-3xl md:text-5xl tracking-tight">Exhibitions</h2>
                   </div>
                   
                   <ExhibitionCarousel collections={collections} />
                   
-                   <div className="text-center mt-16">
-                      <Button variant="outline" className="border-foreground/20 bg-transparent hover:bg-foreground hover:text-background rounded-full px-8 py-6 text-xs uppercase tracking-widest" asChild>
+                   <div className="text-center mt-12 md:mt-16">
+                      <Button variant="outline" className="border-foreground/20 bg-transparent hover:bg-foreground hover:text-background rounded-full px-8 py-6 text-xs uppercase tracking-widest w-full md:w-auto" asChild>
                           <Link href="/collections">View All Collections</Link>
                       </Button>
                   </div>
@@ -391,22 +397,24 @@ export default function Home() {
       <ReviewsSection />
       
       {/* --- INSTAGRAM SECTION --- */}
-      <motion.section className="bg-secondary/50 py-20 md:py-32 border-t border-border/40" data-ai-hint="instagram feed" {...sectionAnimation}>
-        <div className="container mx-auto px-6">
+      <motion.section className="bg-secondary/50 py-16 md:py-32 border-t border-border/40" data-ai-hint="instagram feed" {...sectionAnimation}>
+        <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-screen-2xl mx-auto">
             <div className="text-center mb-12">
                <div className="inline-flex items-center justify-center p-3 rounded-full bg-secondary/30 mb-6">
                   <Instagram className="h-6 w-6 text-foreground" />
                </div>
-              <h2 className="font-headline text-4xl md:text-5xl mb-3 tracking-tight">@khushijewelssilver</h2>
-              <p className="text-muted-foreground tracking-wide">Follow our journey on Instagram</p>
+              {/* CHANGED: Text sizing for mobile */}
+              <h2 className="font-headline text-3xl md:text-5xl mb-3 tracking-tight break-all md:break-normal">@khushijewelssilver</h2>
+              <p className="text-muted-foreground tracking-wide text-sm md:text-base">Follow our journey on Instagram</p>
             </div>
 
             <div className="py-8">
               <ImageMarquee baseVelocity={-1}>
                   {silverInstagramPosts.map((post) => (
                       <Link href={post.slug} key={post.id} target="_blank" rel="noopener noreferrer">
-                      <div className="relative aspect-square w-64 md:w-80 overflow-hidden rounded-sm group mx-3 bg-gray-100">
+                      {/* CHANGED: Adjusted width for mobile to prevent too large blocks */}
+                      <div className="relative aspect-square w-56 md:w-80 overflow-hidden rounded-sm group mx-3 bg-gray-100">
                         <Image
                           src={post.imageUrl}
                           alt="Instagram post"
@@ -424,7 +432,7 @@ export default function Home() {
             </div>
               
              <div className="text-center mt-10">
-               <Button asChild className="rounded-full px-8 py-6 text-xs font-bold uppercase tracking-widest bg-foreground text-background hover:bg-foreground/80">
+               <Button asChild className="rounded-full px-8 py-6 text-xs font-bold uppercase tracking-widest bg-foreground text-background hover:bg-foreground/80 w-full md:w-auto">
                 <Link href="#" target="_blank" rel="noopener noreferrer">
                   Follow Us
                 </Link>
