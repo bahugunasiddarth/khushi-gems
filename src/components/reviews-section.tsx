@@ -80,16 +80,29 @@ export default function ReviewsSection() {
     <section id="reviews-anchor" className="w-full bg-[hsl(40,83%,90.2%)] py-16 overflow-hidden relative">
       <div className="container mx-auto px-4">
         
-        <h2 className="text-4xl md:text-5xl font-serif text-center text-black mb-16 tracking-wide">
-  Customer Reviews You Can Trust
-</h2>
+  <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-3 mb-4">
+            <div className="w-8 h-[2px] bg-gradient-to-r from-transparent to-[#D4AF37]"></div>
+            <span className="text-[#D4AF37] font-medium tracking-widest text-sm uppercase">Testimonials</span>
+            <div className="w-8 h-[2px] bg-gradient-to-l from-transparent to-[#D4AF37]"></div>
+          </div>
+          
+          <h2 className="text-4xl md:text-5xl font-headline text-[#000000] mb-4 tracking-tight">
+            Customer Reviews You Can Trust
+          </h2>
+          
+          <p className="text-gray-600 max-w-2xl mx-auto text-lg font-light">
+            Join thousands of satisfied customers who found their perfect jewelry pieces
+          </p>
+        </div>
+
 
 
         {/* String Background */}
-        <div className="absolute top-[180px] left-0 w-full h-20 z-0 pointer-events-none hidden lg:block">
+        <div className="absolute top-[240px] left-0 w-full h-20 z-0 pointer-events-none hidden lg:block">
           <svg width="100%" height="100%" preserveAspectRatio="none">
             <path 
-              d="M0,10 Q500,40 1000,15 T2000,10" 
+              d="M0,10 Q500,40 1000,15 T14000,10" 
               fill="none" 
               stroke="#cbd5e1" 
               strokeWidth="2" 
@@ -97,6 +110,8 @@ export default function ReviewsSection() {
           </svg>
         </div>
 
+        {/* Cards Container */}
+        {/* Adjusted justify and gap to fit 5 items */}
         <div className="relative z-10 flex flex-wrap justify-center lg:justify-between items-start gap-4 px-2">
           
           {testimonials.map((item) => (
