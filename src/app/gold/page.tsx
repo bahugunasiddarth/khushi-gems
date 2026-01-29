@@ -48,7 +48,8 @@ export default function GoldPage() {
   }
 
   return (
-    <div className="flex flex-col gap-24 md:gap-12 overflow-hidden bg-background text-foreground">
+    // CHANGED: gap-24 to gap-16 md:gap-24 for better mobile spacing
+    <div className="flex flex-col gap-16 md:gap-24 overflow-hidden bg-background text-foreground">
       
       {/* --- HERO SECTION --- */}
       <motion.section 
@@ -65,11 +66,13 @@ export default function GoldPage() {
               stopOnInteraction: false,
             }),
           ]}
-          className="w-full h-screen md:h-[95vh]"
+          // CHANGED: h-screen to h-[100dvh] for mobile browsers
+          className="w-full h-[100dvh] md:h-[95vh]"
         >
           <CarouselContent>
             {goldBannerSlides.map((slide) => (
-              <CarouselItem key={slide.id} className="h-screen md:h-[87vh]">
+              // CHANGED: Responsive height
+              <CarouselItem key={slide.id} className="h-[100dvh] md:h-[87vh]">
                 <div className="relative h-full w-full">
                   <Image
                     src={slide.imageUrl}
@@ -87,8 +90,7 @@ export default function GoldPage() {
           </CarouselContent>
           
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white pointer-events-none px-4">
-              {/* Optional: Add Hero Text Overlay here if needed to match Silver exactness, 
-                  but kept clean as per original Gold logic */}
+              {/* Optional: Add Hero Text Overlay here if needed */}
           </div>
 
           <div className="absolute bottom-20 right-90 hidden md:flex gap-3">
@@ -99,14 +101,15 @@ export default function GoldPage() {
       </motion.section>
 
       {/* --- CATEGORIES SECTION --- */}
-      <motion.section className="container mx-auto px-40" data-ai-hint="shop by category" {...sectionAnimation}>
+      {/* CHANGED: px-40 to responsive px-4 md:px-12 lg:px-40 */}
+      <motion.section className="container mx-auto px-4 md:px-12 lg:px-40" data-ai-hint="shop by category" {...sectionAnimation}>
         <div className="max-w-screen-2xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10 md:mb-16">
             <span className="text-xs font-bold tracking-[0.2em] text-primary uppercase block mb-3">Explore</span>
-            <h2 className="font-headline text-4xl md:text-5xl tracking-tight">Shop by Category</h2>
+            <h2 className="font-headline text-3xl md:text-5xl tracking-tight">Shop by Category</h2>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
             {goldCategories.map((category) => (
               <Link href={`/gold/${encodeURIComponent(category.name)}`} key={category.name}>
                 <Card className="group relative overflow-hidden rounded-xl border-none shadow-none bg-gray-100 aspect-[3/4]">
@@ -123,8 +126,9 @@ export default function GoldPage() {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
                       
                       {/* Text Layout */}
-                      <div className="absolute bottom-0 left-0 w-full p-6 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
-                        <h3 className="font-headline text-xl text-white tracking-wide mb-1">{category.name}</h3>
+                      <div className="absolute bottom-0 left-0 w-full p-4 md:p-6 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                        {/* CHANGED: Text sizing */}
+                        <h3 className="font-headline text-lg md:text-xl text-white tracking-wide mb-1">{category.name}</h3>
                         <div className="h-px w-0 group-hover:w-12 bg-white/50 mx-auto transition-all duration-500 delay-100"></div>
                       </div>
                     </div>
@@ -137,15 +141,15 @@ export default function GoldPage() {
       </motion.section>
 
       {/* --- BESTSELLERS SECTION --- */}
-      <motion.section className="w-full bg-secondary/50 py-20 md:py-32" data-ai-hint="bestsellers carousel" {...sectionAnimation}>
-        <div className="container mx-auto px-6">
+      <motion.section className="w-full bg-secondary/50 py-16 md:py-32" data-ai-hint="bestsellers carousel" {...sectionAnimation}>
+        <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-screen-2xl mx-auto">
             {/* Left Aligned Header */}
-            <div className="flex flex-col md:flex-row justify-between items-end mb-12 px-2">
-              <div className="text-center md:text-left">
+            <div className="flex flex-col md:flex-row justify-between items-end mb-10 md:mb-12 px-2">
+              <div className="text-center md:text-left w-full md:w-auto">
                 <span className="text-xs font-bold tracking-[0.2em] text-primary uppercase block mb-3">Curated For You</span>
-                <h2 className="font-headline text-4xl md:text-5xl tracking-tight mb-2">Our Gold Bestsellers</h2>
-                <p className="text-muted-foreground font-light">Timeless gold pieces, handcrafted with love</p>
+                <h2 className="font-headline text-3xl md:text-5xl tracking-tight mb-2">Our Gold Bestsellers</h2>
+                <p className="text-muted-foreground font-light text-sm md:text-base">Timeless gold pieces, handcrafted with love</p>
               </div>
               <div className="hidden md:flex gap-2">
                  {/* Placeholder for custom nav if needed */}
@@ -167,9 +171,10 @@ export default function GoldPage() {
                   ]}
                   className="w-full group/carousel"
                 >
-                  <CarouselContent className="-ml-6">
+                  <CarouselContent className="-ml-4 md:-ml-6">
                     {goldBestsellers.map((product) => (
-                      <CarouselItem key={product.id} className="basis-1/2 md:basis-1/3 lg:basis-1/4 pl-6">
+                      // CHANGED: basis-[75%] for mobile (shows 1 card with peek), sm:basis-1/2
+                      <CarouselItem key={product.id} className="basis-[75%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4 pl-4 md:pl-6">
                         <ProductCard product={product} />
                       </CarouselItem>
                     ))}
@@ -189,23 +194,25 @@ export default function GoldPage() {
       </motion.section>
 
       {/* --- INSTAGRAM SECTION --- */}
-      <motion.section className=" py-20 md:py-2 border-t10" data-ai-hint="instagram feed" {...sectionAnimation}>
-        <div className="container mx-auto px-6">
+      {/* CHANGED: Fixed typo border-t10 to border-t and adjusted padding */}
+      <motion.section className="py-16 md:py-32 border-t border-border/40" data-ai-hint="instagram feed" {...sectionAnimation}>
+        <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-screen-2xl mx-auto">
             {/* Center Header */}
             <div className="text-center mb-12">
                <div className="inline-flex items-center justify-center p-3 rounded-full bg-secondary/30 mb-6">
                   <Instagram className="h-6 w-6 text-foreground" />
                </div>
-              <h2 className="font-headline text-4xl md:text-5xl mb-3 tracking-tight">@khushigemsandjewellery</h2>
-              <p className="text-muted-foreground tracking-wide">Follow our journey on Instagram</p>
+              <h2 className="font-headline text-3xl md:text-5xl mb-3 tracking-tight break-all md:break-normal">@khushigemsandjewellery</h2>
+              <p className="text-muted-foreground tracking-wide text-sm md:text-base">Follow our journey on Instagram</p>
             </div>
             
             <div className="py-8">
               <ImageMarquee baseVelocity={-1}>
                   {goldInstagramPosts.map((post) => (
                       <Link href={post.slug} key={post.id} target="_blank" rel="noopener noreferrer">
-                      <div className="relative aspect-square w-64 md:w-80 overflow-hidden rounded-sm group mx-3 bg-gray-100">
+                      {/* CHANGED: Adjusted width for mobile */}
+                      <div className="relative aspect-square w-56 md:w-80 overflow-hidden rounded-sm group mx-3 bg-gray-100">
                         <Image
                           src={post.imageUrl}
                           alt="Instagram post"
@@ -224,7 +231,7 @@ export default function GoldPage() {
             </div>
               
              <div className="text-center mt-10">
-               <Button asChild className="rounded-full px-8 py-6 text-xs font-bold uppercase tracking-widest bg-foreground text-background hover:bg-foreground/80">
+               <Button asChild className="rounded-full px-8 py-6 text-xs font-bold uppercase tracking-widest bg-foreground text-background hover:bg-foreground/80 w-full md:w-auto">
                 <Link href="#" target="_blank" rel="noopener noreferrer">
                   Follow Us
                 </Link>
