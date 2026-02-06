@@ -419,7 +419,7 @@ export default function Home() {
               
              <div className="text-center mt-10">
                <Button asChild className="rounded-full px-8 py-6 text-xs font-bold uppercase tracking-widest bg-foreground text-background hover:bg-foreground/80 w-full md:w-auto">
-                <Link href="#" target="_blank" rel="noopener noreferrer">
+                <Link href="https://www.instagram.com/khushijewelssilver?igsh=MXFobWhkaTQ4Y3oweA%3D%3D&utm_source=qr" target="_blank" rel="noopener noreferrer">
                   Follow Us
                 </Link>
               </Button>
