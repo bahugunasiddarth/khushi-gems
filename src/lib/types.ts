@@ -10,7 +10,8 @@ export type Product = {
   imageUrls: string[];
   imageUrl?: string;
   availability: 'READY TO SHIP' | 'MADE TO ORDER';
-  stockQuantity?: number; // Ensure this is present
+  processingTimeBuffer?: number;
+  stockQuantity?: number; 
   imageHint: string; 
   images: ProductImage[]; 
   tag?: string;

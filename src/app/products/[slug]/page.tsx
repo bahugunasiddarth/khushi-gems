@@ -9,6 +9,8 @@ import { useCart } from "@/components/cart-provider";
 import { useProducts } from "@/components/product-provider";
 import { ringSizes } from "@/lib/data";
 import { ProductCard } from "@/components/product-card";
+import { calculateDeliveryRange } from "@/lib/delivery-utils";
+
 import {
   Carousel,
   CarouselContent,
@@ -169,6 +171,7 @@ export default function ProductPage() {
   if (!product || !activeImage) { notFound(); return null; }
 
   const inWishlist = isItemInWishlist(product.id);
+  const { estimatedRange } = calculateDeliveryRange(product);
 
   const isQueryForRate = product.priceOnRequest === true; 
 
@@ -270,6 +273,16 @@ export default function ProductPage() {
           )}
           
           <p className="text-base text-foreground/80 mb-6">{product.description}</p>
+          <div className="mb-6 p-4 border rounded-lg ">
+            <p className="text-sm font-medium text-slate-900">
+              Estimated Delivery: <span className="text-primary font-bold">{estimatedRange}</span>
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              {product.availability === 'MADE TO ORDER' 
+                ? "*Handcrafted specially for you. Takes 25-28 days." 
+                : "*Dispatched within 24-48 hours. Takes 8-10 days."}
+            </p>
+          </div>
 
           {product.category === 'Rings' && (
             <div className="space-y-4 my-6">
