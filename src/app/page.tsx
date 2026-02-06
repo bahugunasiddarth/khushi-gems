@@ -338,7 +338,7 @@ export default function Home() {
       {/* --- MARQUEE --- */}
       <motion.section className="py-2 bg-black text-beige my-0" data-ai-hint="dynamic banner" {...sectionAnimation}>
         <Marquee baseVelocity={-2}>
-             <span className="font-headline text-lg md:text-2xl mx-4">Khushi Gems and Jewellery</span>
+             <span className="font-headline text-lg md:text-2xl mx-4">Khushi Gems and Jewels</span>
              <span className="font-headline text-lg md:text-2xl mx-4">Handcrafted Bridal jewellery</span>
              <span className="font-headline text-lg md:text-2xl mx-4">Jaipur-Based Artisan</span>
         </Marquee>

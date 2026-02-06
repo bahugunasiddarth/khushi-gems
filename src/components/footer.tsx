@@ -230,7 +230,7 @@ export function Footer() {
         </div>
 
          <div className="border-t border-primary-foreground/20 mt-12 pt-8 text-center text-sm text-primary-foreground/70">
-          <p>&copy; {new Date().getFullYear()} Khushi Gems and Jewellery. All Rights Reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Khushi Gems and Jewels. All Rights Reserved.</p>
         </div>
       </div>
     </footer>

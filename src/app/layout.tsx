@@ -14,38 +14,33 @@ import { ProductProvider } from '@/components/product-provider';
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.khushigemsjaipur.com'),
   title: {
-    default: 'Khushi Gems: Best Jewellery Shop in Jaipur | Gold & Silver Rings',
-    template: '%s | Khushi Gems Jaipur'
+    default: 'Khushi Gems and Jewels | Best Jewellery Shop in Jaipur', 
+    template: '%s | Khushi Gems and Jewels' 
   },
   description:
-    'Looking for the best jewellery shop in Jaipur? Khushi Gems offers authentic Gold, Silver, and Kundan Meena jewellery in Johari Bazar. Worldwide Shipping available.',
+    'Khushi Gems and Jewels is a trusted jewellery store in Johari Bazar, Jaipur. Discover authentic Gold, Silver, and Kundan Meena jewellery.', // UPDATED
   keywords: [
+    'Khushi Gems and Jewels', 
+    'Khushi Gems and Jewels Jaipur',
     'Best Jewellery Shop in Jaipur',
-    'Best Gold Ring in Jaipur',
+    'Gold Ring Price in Jaipur',
     'Best Silver Jewellery in Jaipur',
-    'Johari Bazar Jewellery Shop',
-    'Jaipur Jewellery Market',
-    'Buy Jaipur Jewellery Online',
-    'Kundan Meena Jewellery Jaipur',
-    'Handcrafted Jewellery Jaipur',
-    'Gold Jewellery With Price',
-    '925 Sterling Silver Jaipur',
-    'Indian Jewellery Worldwide Shipping'
+    'Johari Bazar Jewellery Shop'
   ],
   openGraph: {
     type: 'website',
     locale: 'en_IN',
     url: 'https://www.khushigemsjaipur.com',
-    siteName: 'Khushi Gems and Jewellery',
-    title: 'Khushi Gems: Best Jewellery Shop in Jaipur',
+    siteName: 'Khushi Gems and Jewels', 
+    title: 'Khushi Gems and Jewels | Best Jewellery Shop in Jaipur',
     description:
-      'Buy authentic Jaipur jewellery from Johari Bazar. Gold, Silver & Kundan Meena jewellery with worldwide delivery.',
+      'Buy authentic Jaipur jewellery from Khushi Gems and Jewels. Gold, Silver & Kundan Meena jewellery with worldwide delivery.',
     images: [
       {
         url: '/khushigems.png',
         width: 1200,
         height: 630,
-        alt: 'Khushi Gems and Jewellery Johari Bazar Jaipur',
+        alt: 'Khushi Gems and Jewels Jaipur',
       },
     ],
   },
@@ -84,7 +79,7 @@ export default function RootLayout({
               {
                 "@context": "https://schema.org",
                 "@type": "JewelryStore",
-                "name": "Khushi Gems and Jewellery",
+                "name": "Khushi Gems and Jewels",
                 "image": "https://www.khushigemsjaipur.com/khushigems.png",
                 "description": "Trusted jewellery store in Johari Bazar, Jaipur offering Gold, Silver, Kundan Meena and traditional Rajasthani jewellery.",
                 "url": "https://www.khushigemsjaipur.com",
