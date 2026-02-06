@@ -24,7 +24,7 @@ function normalizeProduct(doc: any): Product {
     id: doc.id,
     name: data.name || "Untitled Product",
     price: Number(data.price) || 0,
-    slug: data.slug || doc.id,
+    slug: data.slug || null,
     description: data.description || "",
     category: data.category || "Uncategorized",
     material: material,

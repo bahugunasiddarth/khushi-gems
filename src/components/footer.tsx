@@ -78,7 +78,7 @@ export function Footer() {
           </div>
           <div className="md:col-span-1">
               <h3 className="font-headline text-lg mb-4">Contact Us</h3>
-              <div className="space-y-4 text-sm text-primary-foreground/90">
+              <div className="space-y-4 text-sm text-primary-foreground/90" data-nosnippe>
                   <div className="flex items-start gap-3">
                       <MapPin className="h-4 w-4 mt-1 flex-shrink-0" />
                       <div>
@@ -178,7 +178,7 @@ export function Footer() {
 
           <div className="mt-12">
              <h3 className="font-headline text-lg mb-4 text-center">Contact Us</h3>
-              <div className="space-y-4 text-sm text-primary-foreground/90 text-center">
+              <div className="space-y-4 text-sm text-primary-foreground/90 text-center" data-nosnippet>
                   <div className="flex flex-col items-center gap-1">
                       <MapPin className="h-5 w-5 mb-1" />
                       <div>
