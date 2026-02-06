@@ -12,7 +12,8 @@ import {
   ShoppingBag, 
   MapPin, 
   ArrowRight,
-  PackageCheck
+  PackageCheck,
+  Truck
 } from "lucide-react";
 import Image from "next/image";
 import { useSearchParams } from 'next/navigation';
@@ -21,6 +22,7 @@ import { doc, collection } from 'firebase/firestore';
 import type { Order, OrderItem } from '@/lib/types';
 import { motion } from "framer-motion";
 import { LoadingLogo } from '@/components/loading-logo';
+import { calculateDeliveryRange } from "@/lib/delivery-utils";
 
 function OrderDetailsContent() {
   const searchParams = useSearchParams();
@@ -171,7 +173,12 @@ function OrderDetailsContent() {
                     animate="show"
                     className="space-y-4"
                 >
-                    {orderItems && orderItems.map((item) => (
+                    {orderItems && orderItems.map((item) => {
+                      const orderDate = new Date(order.orderDate.seconds * 1000);
+                      // Use optional chaining and a fallback for older orders
+                      const delivery = calculateDeliveryRange({ availability: item.status || 'READY TO SHIP' }, orderDate);
+
+                      return (
                         <motion.div 
                             key={item.id} 
                             variants={itemVariants}
@@ -192,6 +199,10 @@ function OrderDetailsContent() {
                                     <span className="bg-secondary px-2.5 py-0.5 rounded-md font-medium text-secondary-foreground">Qty: {item.quantity}</span>
                                     {item.size && <span>Size: {item.size}</span>}
                                 </div>
+                                <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs text-muted-foreground pt-1">
+                                    <Truck className="h-3 w-3" />
+                                    <span>Est. Delivery: {delivery.estimatedRange}</span>
+                                </div>
                             </div>
                             
                             <div className="text-right">
@@ -201,7 +212,8 @@ function OrderDetailsContent() {
                                 )}
                             </div>
                         </motion.div>
-                    ))}
+                      );
+                    })}
                 </motion.div>
                 
                 {/* Total Calculation */}

@@ -1,12 +1,15 @@
 import { Product } from "./types";
 
-export const calculateDeliveryRange = (product: Product) => {
-  const today = new Date();
+export const calculateDeliveryRange = (
+  product: { availability?: string } | Product, 
+  startDate: Date = new Date()
+) => {
+  const start = new Date(startDate);
   
   let minDays = 0;
   let maxDays = 0;
 
-  if (product.availability === 'READY TO SHIP') {
+  if (product.availability === 'READY TO SHIP' || product.availability === 'In Stock') {
     minDays = 8;
     maxDays = 10;
   } else {
@@ -15,11 +18,11 @@ export const calculateDeliveryRange = (product: Product) => {
     maxDays = 28;
   }
 
-  const minDate = new Date(today);
-  minDate.setDate(today.getDate() + minDays);
+  const minDate = new Date(start);
+  minDate.setDate(start.getDate() + minDays);
 
-  const maxDate = new Date(today);
-  maxDate.setDate(today.getDate() + maxDays);
+  const maxDate = new Date(start);
+  maxDate.setDate(start.getDate() + maxDays);
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-IN', { 

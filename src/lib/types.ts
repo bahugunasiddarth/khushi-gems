@@ -95,6 +95,7 @@ export type OrderItem = {
     quantity: number;
     itemPrice: number;
     size?: string;
+    status?: string;
 }
 
 export type RingSizeGuideEntry = {

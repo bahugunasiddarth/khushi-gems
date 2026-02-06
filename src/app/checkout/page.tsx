@@ -23,6 +23,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { countries, indianStates } from "@/lib/data";
+import { calculateDeliveryRange } from "@/lib/delivery-utils";
 import {
   Select,
   SelectContent,
@@ -39,6 +40,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingLogo } from "@/components/loading-logo";
 import { motion, AnimatePresence } from "framer-motion";
+import { Truck } from "lucide-react";
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" {...props}>
@@ -369,7 +371,6 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
 return (
     <>
       <AnimatePresence>
-        {/* CHANGED: Check both isSubmitting AND isNavigating */}
         {(form.formState.isSubmitting || isNavigating) && (
           <motion.div
             className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100] flex flex-col items-center justify-center"
@@ -655,41 +656,48 @@ return (
             <div>
               <h2 className="font-headline text-2xl mb-4">Your Order</h2>
               <div className="space-y-4 border border-black/10 p-6 rounded-md">
-                {cart.map((item) => (
-                  // FIXED: Unique key here as well
-                  <div key={`${item.id}-${item.size || ''}-${item.status || ''}`} className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="relative h-16 w-16 rounded-md overflow-hidden">
-                        <Image
-                          src={item.imageUrl || "https://placehold.co/100x100?text=No+Image"}
-                          alt={item.name}
-                          fill
-                          className="object-cover"
-                          data-ai-hint={`${item.imageHint}`}
-                        />
-                      </div>
-                      <div>
-                        <p className="font-bold">{item.name} <span className="font-normal">× {item.quantity}</span></p>
-                        {item.size && <p className="text-sm text-muted-foreground">Size: {item.size}</p>}
-                        
-                        {/* FIXED: Display correct status instead of static tag */}
-                        {item.status ? (
-                            <div className={cn("text-xs font-semibold mt-1 flex items-center gap-2", item.status === 'READY TO SHIP' ? "text-green-700" : "text-amber-600")}>
-                                <span className={cn("h-2 w-2 rounded-full", item.status === 'READY TO SHIP' ? 'bg-green-700' : 'bg-amber-600')}></span>
-                                {item.status}
+                {cart.map((item) => {
+                  const delivery = calculateDeliveryRange({ availability: item.status || item.availability || 'READY TO SHIP' });
+
+                  return (
+                    <div key={`${item.id}-${item.size || ''}-${item.status || ''}`} className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="relative h-16 w-16 rounded-md overflow-hidden">
+                          <Image
+                            src={item.imageUrl || "https://placehold.co/100x100?text=No+Image"}
+                            alt={item.name}
+                            fill
+                            className="object-cover"
+                            data-ai-hint={`${item.imageHint}`}
+                          />
+                        </div>
+                        <div>
+                          <p className="font-bold">{item.name} <span className="font-normal">× {item.quantity}</span></p>
+                          {item.size && <p className="text-sm text-muted-foreground">Size: {item.size}</p>}
+                          
+                          {item.status ? (
+                              <div className={cn("text-xs font-semibold mt-1 flex items-center gap-2", item.status === 'READY TO SHIP' ? "text-green-700" : "text-amber-600")}>
+                                  <span className={cn("h-2 w-2 rounded-full", item.status === 'READY TO SHIP' ? 'bg-green-700' : 'bg-amber-600')}></span>
+                                  {item.status}
+                              </div>
+                          ) : item.tag && (
+                            <div className="flex items-center gap-2 text-xs text-green-700 font-semibold mt-1">
+                              <span className="h-2 w-2 rounded-full bg-green-700"></span>
+                              {item.tag}
                             </div>
-                        ) : item.tag && (
-                          <div className="flex items-center gap-2 text-xs text-green-700 font-semibold mt-1">
-                            <span className="h-2 w-2 rounded-full bg-green-700"></span>
-                            {item.tag}
+                          )}
+                          
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1.5">
+                              <Truck className="h-3 w-3" />
+                              <span>Est. Delivery: {delivery.estimatedRange}</span>
                           </div>
-                        )}
-                        
+
+                        </div>
                       </div>
+                      <p>₹{(item.price * item.quantity).toLocaleString()}</p>
                     </div>
-                    <p>₹{(item.price * item.quantity).toLocaleString()}</p>
-                  </div>
-                ))}
+                  );
+                })}
                 <Separator className="bg-black/10" />
                 <div className="space-y-2">
                   <div className="flex justify-between">

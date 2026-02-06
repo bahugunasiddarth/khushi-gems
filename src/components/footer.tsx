@@ -99,9 +99,14 @@ export function Footer() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                      <Mail className="h-4 w-4" />
-                      <span>anilsoni7104@gmail.com</span>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                        <Mail className="h-4 w-4" />
+                        <a href="mailto:support@khushigemsjaipur.com" className="hover:underline">support@khushigemsjaipur.com</a>
+                    </div>
+                    <div className="flex items-center gap-3 ml-7">
+                        <a href="mailto:anilsoni7104@gmail.com" className="hover:underline">anilsoni7104@gmail.com</a>
+                    </div>
                   </div>
               </div>
               <div className="flex items-center space-x-4 mt-8">
@@ -192,9 +197,10 @@ export function Footer() {
                         ))}
                       </div>
                   </div>
-                  <div className="flex items-center gap-3 justify-center">
-                      <Mail className="h-4 w-4" />
-                      <span>anilsoni7104@gmail.com</span>
+                  <div className="flex flex-col items-center gap-1">
+                      <Mail className="h-5 w-5 mb-1" />
+                      <a href="mailto:support@khushigemsjaipur.com" className="hover:underline">support@khushigemsjaipur.com</a>
+                      <a href="mailto:anilsoni7104@gmail.com" className="hover:underline">anilsoni7104@gmail.com</a>
                   </div>
               </div>
           </div>
