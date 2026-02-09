@@ -260,7 +260,7 @@ export default function Home() {
         </div>
       </motion.section>
       
-      {/* --- ABOUT SECTION (UPDATED: IMAGE FIRST ON MOBILE) --- */}
+      {/* --- ABOUT SECTION --- */}
       <motion.section
         className="container mx-auto px-4 md:px-6 py-12"
         data-ai-hint="introduction section"
@@ -286,19 +286,20 @@ export default function Home() {
             <span className="text-xs font-bold tracking-[0.2em] text-primary uppercase block mb-4">
               Our Heritage
             </span>
-            <h2 className="font-headline text-3xl md:text-5xl lg:text-6xl mb-8 tracking-tight leading-[1.15]">
+           
+            <h1 className="font-headline text-3xl md:text-5xl lg:text-6xl mb-8 tracking-tight leading-[1.15]">
               <span className="text-primary italic">
                 Khushi Gems & Jewels
               </span>{" "}
-              – A Legacy of Jaipur&apos;s Timeless Craftsmanship
-            </h2>
+              – The Best Jewellery Shop in Jaipur & Authentic Gemstone Manufacturer
+            </h1>
             <div className="space-y-6 text-base md:text-lg text-muted-foreground leading-relaxed font-light">
               <p>
                 Rooted in the heart of the Old Pink City,{" "}
                 <span className="font-semibold text-foreground">
                   Khushi Gems & Jewels
                 </span>{" "}
-                stands as a proud custodian of Jaipur&apos;s rich jewellery heritage.
+                is recognized as the <span className="font-bold">best jewellery shop in Jaipur</span> for authentic craftsmanship.
                 With over{" "}
                 <span className="relative font-semibold text-primary after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full after:bg-primary/40">
                   25 years of excellence

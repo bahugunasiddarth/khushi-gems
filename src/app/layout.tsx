@@ -10,19 +10,22 @@ import { WhatsAppButton } from '@/components/whatsapp-button';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ProductProvider } from '@/components/product-provider';
 
-// 1. STRONG SEO METADATA
+// 1. STRONG SEO METADATA (UPDATED)
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.khushigemsjaipur.com'),
   title: {
     default: 'Khushi Gems and Jewels | Best Jewellery Shop in Jaipur', 
-    template: '%s | Khushi Gems and Jewels' 
+    template: '%s | Khushi Gems and Jewels - Top Jewellery Store' 
   },
   description:
-    'Khushi Gems and Jewels is a trusted jewellery store in Johari Bazar, Jaipur. Discover authentic Gold, Silver, and Kundan Meena jewellery.', // UPDATED
+    'Khushi Gems and Jewels is the best jewellery shop in Jaipur, located in Johari Bazar. We are trusted manufacturers of authentic Gems, Gold, Silver, and Kundan Meena jewellery.', 
   keywords: [
     'Khushi Gems and Jewels', 
     'Khushi Gems and Jewels Jaipur',
+    'Khushi Gems and Jewellery', 
     'Best Jewellery Shop in Jaipur',
+    'Best Gems in Jaipur',
+    'Original Gemstones Jaipur',
     'Gold Ring Price in Jaipur',
     'Best Silver Jewellery in Jaipur',
     'Johari Bazar Jewellery Shop'
@@ -80,6 +83,8 @@ export default function RootLayout({
                 "@context": "https://schema.org",
                 "@type": "JewelryStore",
                 "name": "Khushi Gems and Jewels",
+                "alternateName": "Khushi Gems and Jewellery",
+                "knowsAbout": ["Gemstones", "Silver Jewellery", "Gold Jewellery", "Kundan Meena", "Authentic Gems"],
                 "image": "https://www.khushigemsjaipur.com/khushigems.png",
                 "description": "Trusted jewellery store in Johari Bazar, Jaipur offering Gold, Silver, Kundan Meena and traditional Rajasthani jewellery.",
                 "url": "https://www.khushigemsjaipur.com",
