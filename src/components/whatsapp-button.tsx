@@ -1,9 +1,9 @@
-
 "use client";
 
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg
@@ -18,9 +18,34 @@ const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-
 export function WhatsAppButton() {
   const [isHovered, setIsHovered] = useState(false);
+  const pathname = usePathname() || ""; 
+
+  // LOGIC:
+  // 1. Gold Pages -> Gold WhatsApp
+  // 2. Silver Pages (which include /silver AND /category) -> Silver WhatsApp
+  // 3. Everything else -> Default (Silver) WhatsApp
+
+  const isGoldPage = pathname.startsWith('/gold');
+  
+  // Checks if the user is on a "Silver" related page
+  const isSilverPage = pathname.startsWith('/silver') || pathname.startsWith('/category');
+
+  let whatsappLink = "https://wa.link/4i25z5"; // Default to Silver Link
+  let buttonColorClass = "bg-green-500 hover:bg-green-600";
+  let labelText = "Contact Us";
+
+  if (isGoldPage) {
+    whatsappLink = "https://wa.link/j4sszv";
+    buttonColorClass = "bg-green-500 hover:bg-green-600"; // Gold Color
+    labelText = "Gold Inquiry";
+  } else {
+    // This covers Home, Silver, and Category pages
+    whatsappLink = "https://wa.link/4i25z5";
+    buttonColorClass = "bg-green-500 hover:bg-green-600";
+    labelText = "Contact Us";
+  }
 
   return (
     <motion.div
@@ -32,11 +57,11 @@ export function WhatsAppButton() {
       onMouseLeave={() => setIsHovered(false)}
     >
       <Link
-        href="https://wa.link/8cin7r"
+        href={whatsappLink}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Contact us on WhatsApp"
-        className="flex items-center gap-3 bg-green-500 text-white rounded-full p-3 shadow-lg hover:bg-green-600 transition-colors"
+        className={`flex items-center gap-3 text-white rounded-full p-3 shadow-lg transition-colors ${buttonColorClass}`}
       >
         <WhatsAppIcon className="h-7 w-7" />
         <AnimatePresence>
@@ -48,7 +73,7 @@ export function WhatsAppButton() {
               transition={{ duration: 0.3, ease: 'easeInOut' }}
               className="font-semibold text-sm whitespace-nowrap overflow-hidden"
             >
-              Contact Us
+              {labelText}
             </motion.span>
           )}
         </AnimatePresence>

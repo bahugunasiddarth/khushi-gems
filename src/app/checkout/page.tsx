@@ -34,13 +34,19 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
-import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth, errorEmitter, FirestorePermissionError, setDocumentNonBlocking } from "@/firebase";
-import { doc, addDoc, collection, serverTimestamp, setDoc, writeBatch, increment } from "firebase/firestore";
+import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth, setDocumentNonBlocking } from "@/firebase";
+import { doc, collection, serverTimestamp, setDoc, writeBatch, increment } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingLogo } from "@/components/loading-logo";
 import { motion, AnimatePresence } from "framer-motion";
-import { Truck } from "lucide-react";
+import { Truck, Trash2 } from "lucide-react";
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" {...props}>
@@ -101,7 +107,10 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
   const [isNavigating, setIsNavigating] = useState(false);
   const [createAccount, setCreateAccount] = useState(false);
   const [shipToDifferentAddress, setShipToDifferentAddress] = useState(false);
-  const { cart, cartTotal, clearCart } = useCart();
+  
+  // FIX: Added removeFromCart here
+  const { cart, cartTotal, clearCart, removeItem } = useCart(); 
+  
   const router = useRouter();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -191,7 +200,7 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
             clearTimeout(timeoutRef.current);
         }
     };
-  }, [form, form.watch]);
+  }, [form]);
 
    useEffect(() => {
     if (userProfile) {
@@ -225,51 +234,8 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
     }
   }, [userProfile, user, form]);
 
-  async function onSubmit(values: CheckoutFormValues) {
-    onPlaceOrder();
-    if (!firestore || !auth) {
-        toast({
-            variant: "destructive",
-            title: "Checkout Error",
-            description: "Could not connect to the database. Please try again later.",
-        });
-        return;
-    }
-
-    let effectiveUser = user;
-
-    if (!effectiveUser && values.createAccountPassword) {
-        try {
-            const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.createAccountPassword);
-            effectiveUser = userCredential.user;
-            await effectiveUser.getIdToken(true); 
-            const userDocRef = doc(firestore, 'users', effectiveUser.uid);
-            await setDoc(userDocRef, {
-                id: effectiveUser.uid,
-                email: values.email,
-                firstName: values.firstName,
-                lastName: values.lastName,
-            }, { merge: true });
-            toast({ title: "Account created successfully!" });
-        } catch (error: any) {
-             toast({
-                variant: "destructive",
-                title: "Account Creation Failed",
-                description: error.message,
-            });
-            return;
-        }
-    }
-
-    if (!effectiveUser) {
-        toast({
-            variant: "destructive",
-            title: "Please log in",
-            description: "You need to be logged in to place an order.",
-        });
-        return;
-    }
-
+  async function finalizeFirebaseOrder(values: CheckoutFormValues, effectiveUser: any, paymentId: string) {
+    setIsNavigating(true);
     const gst = cartTotal * 0.03;
     const totalWithGst = cartTotal + gst;
     
@@ -282,6 +248,7 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
         userId: effectiveUser.uid,
         orderDate: serverTimestamp(),
         totalAmount: totalWithGst,
+        paymentId: paymentId,
         shippingAddress: shippingAddressString,
         billingAddress: billingAddressString,
         paymentMethod: values.paymentMethod,
@@ -293,8 +260,8 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
     };
 
     try {
-      const batch = writeBatch(firestore);
-      const ordersCollectionRef = collection(firestore, 'users', effectiveUser.uid, 'orders');
+      const batch = writeBatch(firestore!);
+      const ordersCollectionRef = collection(firestore!, 'users', effectiveUser.uid, 'orders');
       const newOrderRef = doc(ordersCollectionRef); 
       batch.set(newOrderRef, orderData);
 
@@ -325,7 +292,7 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
       }
 
       for (const [productId, quantity] of Object.entries(stockUpdates)) {
-          const productRef = doc(firestore, 'products', productId);
+          const productRef = doc(firestore!, 'products', productId);
           batch.update(productRef, {
               stockQuantity: increment(-quantity)
           });
@@ -333,7 +300,7 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
 
       await batch.commit();
 
-      const userDocRef = doc(firestore, 'users', effectiveUser.uid);
+      const userDocRef = doc(firestore!, 'users', effectiveUser.uid);
       const billingAddress = {
           firstName: values.firstName,
           lastName: values.lastName,
@@ -354,14 +321,80 @@ function CheckoutForm({ onPlaceOrder }: { onPlaceOrder: () => void }) {
       localStorage.removeItem('checkoutForm');
       router.push(`/thank-you?orderId=${newOrderRef.id}&new=true`);
 
-} catch (error: any) {
-        setIsNavigating(false); // Reset if error
+    } catch (error: any) {
+        setIsNavigating(false);
         toast({
             variant: "destructive",
             title: "Order Failed",
-            description: "Something went wrong. Please try again.",
+            description: "Payment was successful, but we couldn't record the order. Please contact support.",
         });
-        throw error;
+    }
+  }
+
+  async function onSubmit(values: CheckoutFormValues) {
+    if (!firestore || !auth) {
+        toast({ variant: "destructive", title: "Checkout Error", description: "Could not connect to the database." });
+        return;
+    }
+
+    onPlaceOrder();
+
+    let effectiveUser = user;
+
+    if (!effectiveUser && values.createAccountPassword) {
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.createAccountPassword);
+            effectiveUser = userCredential.user;
+            await effectiveUser.getIdToken(true); 
+            const userDocRef = doc(firestore, 'users', effectiveUser.uid);
+            await setDoc(userDocRef, {
+                id: effectiveUser.uid,
+                email: values.email,
+                firstName: values.firstName,
+                lastName: values.lastName,
+            }, { merge: true });
+        } catch (error: any) {
+             toast({ variant: "destructive", title: "Account Failed", description: error.message });
+             return;
+        }
+    }
+
+    if (!effectiveUser) {
+        toast({ variant: "destructive", title: "Log In Required", description: "Please log in to checkout." });
+        return;
+    }
+
+    const totalAmountWithGst = cartTotal + (cartTotal * 0.03);
+
+    try {
+        const orderResponse = await fetch("/api/razorpay/order", {
+            method: "POST",
+            body: JSON.stringify({ amount: totalAmountWithGst }),
+        });
+        const orderData = await orderResponse.json();
+
+        const options = {
+            key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+            amount: orderData.amount,
+            currency: "INR",
+            name: "Khushi Gems & Jewellery",
+            description: "Order Purchase",
+            order_id: orderData.id,
+            handler: async function (response: any) {
+                await finalizeFirebaseOrder(values, effectiveUser, response.razorpay_payment_id);
+            },
+            prefill: {
+                name: `${values.firstName} ${values.lastName}`,
+                email: values.email,
+                contact: values.phone,
+            },
+            theme: { color: "#000000" },
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+    } catch (error) {
+        toast({ variant: "destructive", title: "Payment Error", description: "Unable to initiate payment modal." });
     }
   }
   
@@ -662,13 +695,12 @@ return (
                   return (
                     <div key={`${item.id}-${item.size || ''}-${item.status || ''}`} className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="relative h-16 w-16 rounded-md overflow-hidden">
+                        <div className="relative h-16 w-16 rounded-md overflow-hidden bg-muted">
                           <Image
                             src={item.imageUrl || "https://placehold.co/100x100?text=No+Image"}
                             alt={item.name}
                             fill
                             className="object-cover"
-                            data-ai-hint={`${item.imageHint}`}
                           />
                         </div>
                         <div>
@@ -694,7 +726,19 @@ return (
 
                         </div>
                       </div>
-                      <p>₹{(item.price * item.quantity).toLocaleString()}</p>
+                      
+                      {/* FIX: Moved Trash button to a dedicated flex container on the right */}
+                      <div className="flex items-center gap-4">
+                        <p className="font-medium whitespace-nowrap">₹{(item.price * item.quantity).toLocaleString()}</p>
+                        <button 
+                          type="button" 
+                          onClick={() => removeItem(item.id, item.size, item.status)}
+                          className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                          title="Remove item"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -721,7 +765,6 @@ return (
               </div>
             </div>
             
-            {/* Payment Method Section */}
              <div>
               <h2 className="font-headline text-2xl mb-4">Payment</h2>
               <FormField
@@ -733,11 +776,7 @@ return (
                       <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-1">
                         <FormItem className="flex items-center space-x-3 space-y-0 border border-black/10 p-4 rounded-md">
                           <FormControl><RadioGroupItem value="card" /></FormControl>
-                          <FormLabel className="font-normal">Credit/Debit Card</FormLabel>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-3 space-y-0 border border-black/10 p-4 rounded-md">
-                          <FormControl><RadioGroupItem value="transfer" /></FormControl>
-                          <FormLabel className="font-normal">Direct Bank Transfer</FormLabel>
+                          <FormLabel className="font-normal">Online Payment (Razorpay)</FormLabel>
                         </FormItem>
                       </RadioGroup>
                     </FormControl>
@@ -761,8 +800,8 @@ return (
                 )}
             />
 
-            <Button type="submit" className="w-full" size="lg" disabled={form.formState.isSubmitting}>
-              Place Order
+            <Button type="submit" className="w-full" size="lg" disabled={form.formState.isSubmitting || cart.length === 0}>
+              {cart.length === 0 ? "Cart is empty" : "Place Order"}
             </Button>
           </div>
         </form>
@@ -794,7 +833,12 @@ export default function CheckoutPage() {
     >
       <h1 className="font-headline text-4xl mb-8 text-center">Checkout</h1>
       {cart.length === 0 && !isPlacingOrder ? (
-        <p className="text-center">Your cart is empty.</p>
+        <div className="text-center space-y-4">
+          <p>Your cart is empty.</p>
+          <Button asChild variant="outline">
+            <Link href="/">Back to Shop</Link>
+          </Button>
+        </div>
       ) : (
         <CheckoutForm onPlaceOrder={handlePlaceOrder} />
       )}

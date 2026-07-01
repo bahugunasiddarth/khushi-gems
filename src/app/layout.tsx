@@ -191,6 +191,11 @@ export default function RootLayout({
             gtag('config', 'G-S7H9V04LJS');
           `}
         </Script>
+        <Script 
+          id="razorpay-checkout-js"
+          src="https://checkout.razorpay.com/v1/checkout.js" 
+          strategy="beforeInteractive" 
+        />
 
         <FirebaseClientProvider>
           <ProductProvider>

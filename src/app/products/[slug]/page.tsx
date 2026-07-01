@@ -1,14 +1,15 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getProductBySlug, getSimilarProducts } from '@/lib/seo-data'; // Import new function
+import { getProductBySlug, getSimilarProducts } from '@/lib/seo-data';
 import ProductClientView from './client-view';
 
 interface Props {
-  params: { slug: string }
+  params: Promise<{ slug: string }> // params is now a Promise
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const product = await getProductBySlug(params.slug);
+  const { slug } = await params; // Must await params
+  const product = await getProductBySlug(slug);
 
   if (!product) {
     return { title: 'Product Not Found' };
@@ -27,17 +28,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProductPage({ params }: Props) {
-  // 1. Fetch Main Product
-  const product = await getProductBySlug(params.slug);
+  // 1. Await params to get the slug
+  const { slug } = await params; // Must await params
+
+  // 2. Fetch Main Product
+  const product = await getProductBySlug(slug);
 
   if (!product) {
     notFound();
   }
 
-  // 2. Fetch Similar Products (Same Category + Same Material)
+  // 3. Fetch Similar Products
   const similarProducts = await getSimilarProducts(product.category, product.material, product.id);
 
-  // 3. SEO JSON-LD
+  // 4. SEO JSON-LD
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -48,7 +52,7 @@ export default async function ProductPage({ params }: Props) {
     brand: { '@type': 'Brand', name: 'Khushi Gems and Jewellery' },
     offers: {
       '@type': 'Offer',
-      url: `https://www.khushigemsjaipur.com/products/${params.slug}`,
+      url: `https://www.khushigemsjaipur.com/products/${slug}`,
       priceCurrency: 'INR',
       price: product.price,
       availability: product.availability === 'READY TO SHIP' ? 'https://schema.org/InStock' : 'https://schema.org/PreOrder',
@@ -61,7 +65,6 @@ export default async function ProductPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      {/* 4. Pass data to Client View */}
       <ProductClientView product={product} similarProducts={similarProducts} />
     </>
   );
